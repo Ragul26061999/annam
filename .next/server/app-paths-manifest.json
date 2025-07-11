@@ -1,0 +1,20 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/appointments/page": "app/appointments/page.js",
+  "/beds/page": "app/beds/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/doctors/page": "app/doctors/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/finance/page": "app/finance/page.js",
+  "/login/page": "app/login/page.js",
+  "/md/dashboard/page": "app/md/dashboard/page.js",
+  "/page": "app/page.js",
+  "/patients/page": "app/patients/page.js",
+  "/pharmacy/page": "app/pharmacy/page.js",
+  "/receptionist/dashboard/page": "app/receptionist/dashboard/page.js",
+  "/receptionist/page": "app/receptionist/page.js",
+  "/receptionist/register-patient/page": "app/receptionist/register-patient/page.js",
+  "/receptionist/vitals/page": "app/receptionist/vitals/page.js",
+  "/staff/page": "app/staff/page.js",
+  "/workstation/page": "app/workstation/page.js"
+}
