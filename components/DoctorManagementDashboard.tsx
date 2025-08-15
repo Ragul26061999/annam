@@ -459,7 +459,7 @@ const DoctorManagementDashboard: React.FC = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center">
                         <div className="relative">
-                          <div className={`h-12 w-12 rounded-full ${getCardGradient(doctor.id)} flex items-center justify-center text-white font-semibold`}>
+                          <div className={`h-12 w-12 rounded-full ${getCardGradient(doctor.id || '')} flex items-center justify-center text-white font-semibold`}>
                             {doctor.user?.name?.charAt(0) || 'D'}
                           </div>
                           <div className={`absolute -bottom-1 -right-1 p-1 rounded-full ${color}`}>
@@ -510,7 +510,7 @@ const DoctorManagementDashboard: React.FC = () => {
 
                     <div className="flex justify-between space-x-2 mt-6">
                       <button 
-                        className={`flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id).schedule} rounded-lg transition-colors text-sm font-medium`}
+                        className={`flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id || '').schedule} rounded-lg transition-colors text-sm font-medium`}
                         onClick={() => {
                           setSelectedDoctor(doctor);
                           setShowScheduleModal(true);
@@ -520,7 +520,7 @@ const DoctorManagementDashboard: React.FC = () => {
                         Schedule
                       </button>
                       <button 
-                        className={`flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id).edit} rounded-lg transition-colors text-sm font-medium`}
+                        className={`flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id || '').edit} rounded-lg transition-colors text-sm font-medium`}
                         onClick={() => openEditModal(doctor)}
                       >
                         <Edit size={14} className="mr-1" />
@@ -554,7 +554,7 @@ const DoctorManagementDashboard: React.FC = () => {
                     <tr key={doctor.id} className={`border-t border-gray-100/50 ${index % 2 === 0 ? 'bg-white/40' : 'bg-gray-50/40'} backdrop-blur-sm`}>
                       <td className="py-4 px-6">
                         <div className="flex items-center">
-                          <div className={`h-10 w-10 rounded-full ${getCardGradient(doctor.id)} flex items-center justify-center text-white font-semibold`}>
+                          <div className={`h-10 w-10 rounded-full ${getCardGradient(doctor.id || '')} flex items-center justify-center text-white font-semibold`}>
                             {doctor.user?.name?.charAt(0) || 'D'}
                           </div>
                           <div className="ml-3">
@@ -574,7 +574,7 @@ const DoctorManagementDashboard: React.FC = () => {
                       <td className="py-4 px-6">
                         <div className="flex justify-end space-x-2">
                           <button 
-                            className={`p-2 ${getTableButtonColors(doctor.id).schedule} rounded-lg transition-colors`}
+                            className={`p-2 ${getTableButtonColors(doctor.id || '').schedule} rounded-lg transition-colors`}
                             onClick={() => {
                               setSelectedDoctor(doctor);
                               setShowScheduleModal(true);
@@ -583,7 +583,7 @@ const DoctorManagementDashboard: React.FC = () => {
                             <Calendar size={18} />
                           </button>
                           <button 
-                            className={`p-2 ${getTableButtonColors(doctor.id).edit} rounded-lg transition-colors`}
+                            className={`p-2 ${getTableButtonColors(doctor.id || '').edit} rounded-lg transition-colors`}
                             onClick={() => openEditModal(doctor)}
                           >
                             <Edit size={18} />
