@@ -28,19 +28,23 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all font-medium text-sm;
+    @apply bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium text-sm backdrop-blur-sm;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all font-medium text-sm border border-gray-200;
+    @apply bg-white/80 hover:bg-white/90 text-gray-700 px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium text-sm border border-orange-100/50 backdrop-blur-sm;
   }
 
   .card {
-    @apply bg-white rounded-lg p-5 shadow-sm border border-gray-100;
+    @apply bg-white/90 rounded-2xl p-6 shadow-lg border border-orange-50/50 backdrop-blur-sm;
+  }
+
+  .glass-card {
+    @apply bg-white/80 rounded-2xl p-6 shadow-xl border border-white/20 backdrop-blur-md;
   }
 
   .input-field {
-    @apply bg-white border border-gray-200 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-300 transition-all text-sm;
+    @apply bg-white/90 border border-orange-200/50 rounded-xl px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-orange-300/50 focus:border-orange-400/50 transition-all duration-300 text-sm backdrop-blur-sm;
   }
 
   .badge {
@@ -64,15 +68,15 @@
   }
 
   .nav-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white text-gray-600 hover:text-gray-900 transition-all text-sm font-medium;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-orange-50/80 hover:to-orange-100/60 text-gray-600 hover:text-orange-700 transition-all duration-300 text-sm font-medium backdrop-blur-sm;
   }
 
   .nav-link.active {
-    @apply bg-white text-orange-600 shadow-sm;
+    @apply bg-gradient-to-r from-orange-100/90 to-orange-200/70 text-orange-700 shadow-lg border border-orange-200/50 backdrop-blur-md;
   }
 
   .neu-icon {
-    @apply h-8 w-8 rounded-lg flex items-center justify-center bg-white shadow-sm transition-all;
+    @apply h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-white/90 to-gray-50/80 shadow-lg transition-all duration-300 backdrop-blur-sm;
   }
 
   .hide-scrollbar {
@@ -86,16 +90,38 @@
 
   /* Sidebar styles */
   .sidebar-item {
-    @apply flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-all duration-200;
+    @apply flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50/80 hover:to-orange-100/60 hover:text-orange-700 rounded-xl transition-all duration-300 backdrop-blur-sm;
   }
 
   .sidebar-item.active {
-    @apply bg-orange-100 text-orange-600 font-medium;
+    @apply bg-gradient-to-r from-orange-100/90 to-orange-200/70 text-orange-700 font-semibold shadow-lg border border-orange-200/50 backdrop-blur-md;
   }
 
   /* Dashboard card styles */
   .stat-card {
-    @apply bg-white rounded-lg shadow-sm p-6 border border-gray-200;
+    @apply bg-gradient-to-br from-white/90 to-orange-50/30 rounded-2xl shadow-xl p-6 border border-orange-100/50 backdrop-blur-md hover:shadow-2xl transition-all duration-300;
+  }
+
+  /* Glass morphism effects */
+  .glass-bg {
+    @apply bg-gradient-to-br from-orange-50/40 to-white/60 backdrop-blur-xl;
+  }
+
+  .glass-sidebar {
+    @apply bg-gradient-to-b from-white/95 to-orange-50/80 backdrop-blur-xl border-r border-orange-100/50;
+  }
+
+  /* Enhanced gradients */
+  .gradient-orange {
+    @apply bg-gradient-to-r from-orange-400 to-orange-500;
+  }
+
+  .gradient-orange-soft {
+    @apply bg-gradient-to-r from-orange-100/80 to-orange-200/60;
+  }
+
+  .gradient-orange-hover {
+    @apply hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600;
   }
 
   .stat-card:hover {

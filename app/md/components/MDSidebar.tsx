@@ -34,57 +34,50 @@ const Sidebar: React.FC = () => {
 
   const navItems: NavItem[] = [
     { 
-      href: '/dashboard', 
+      href: '/md/dashboard', 
       label: 'Dashboard', 
       icon: <LayoutDashboard size={18} />, 
       color: 'text-blue-600'
     },
     { 
-      href: '/patients', 
+      href: '/md/patients', 
       label: 'Patients', 
       icon: <Users size={18} />, 
-      color: 'text-green-600',
-      badge: '1,284'
+      color: 'text-green-600'
     },
     { 
-      href: '/doctors', 
-      label: 'Doctors', 
+      href: '/md/doctors', 
+      label: 'Doctor Management', 
       icon: <Stethoscope size={18} />, 
       color: 'text-purple-600'
     },
     { 
-      href: '/staff', 
-      label: 'Staff', 
-      icon: <UsersRound size={18} />, 
-      color: 'text-indigo-600'
-    },
-    { 
-      href: '/appointments', 
+      href: '/md/appointments', 
       label: 'Appointments', 
       icon: <Calendar size={18} />, 
       color: 'text-orange-600',
       badge: '42'
     },
     { 
-      href: '/workstation', 
+      href: '/md/workstation', 
       label: 'Workstation', 
       icon: <Activity size={18} />, 
       color: 'text-teal-600'
     },
     { 
-      href: '/pharmacy', 
+      href: '/md/pharmacy', 
       label: 'Pharmacy', 
       icon: <Pill size={18} />, 
       color: 'text-red-600'
     },
     { 
-      href: '/beds', 
+      href: '/md/beds', 
       label: 'Bed Management', 
       icon: <Bed size={18} />, 
       color: 'text-pink-600'
     },
     { 
-      href: '/finance', 
+      href: '/md/finance', 
       label: 'Finance', 
       icon: <DollarSign size={18} />, 
       color: 'text-emerald-600'
@@ -97,7 +90,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col shadow-sm transition-all duration-300 ease-in-out`}>
+    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} glass-sidebar h-full flex flex-col shadow-xl transition-all duration-300 ease-in-out`}>
       {/* Header */}
       <div className="h-20 border-b border-gray-100 flex items-center justify-between px-4">
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : ''}`}>
@@ -142,19 +135,19 @@ const Sidebar: React.FC = () => {
             <Link
               key={item.href}
               href={item.href}
-              className={`group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden ${
+              className={`group flex items-center px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden backdrop-blur-sm ${
                 isActive 
-                  ? 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-600 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-orange-100/90 to-orange-200/70 text-orange-700 shadow-lg border border-orange-200/50' 
+                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-orange-50/80 hover:to-orange-100/60 hover:text-orange-700 hover:shadow-md'
               }`}
             >
               {/* Active indicator */}
               {isActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-orange-500 rounded-r-full"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-400 to-orange-500 rounded-r-full shadow-sm"></div>
               )}
               
               {/* Icon */}
-              <div className={`flex-shrink-0 ${isActive ? 'text-orange-600' : item.color} transition-colors duration-200`}>
+              <div className={`flex-shrink-0 ${isActive ? 'text-orange-600' : 'text-orange-500'} transition-colors duration-300`}>
                 {item.icon}
               </div>
               
@@ -212,4 +205,4 @@ const Sidebar: React.FC = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

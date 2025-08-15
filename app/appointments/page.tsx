@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Calendar, 
   Search, 
@@ -19,8 +19,17 @@ import {
   Phone,
   Stethoscope
 } from 'lucide-react';
+import AppointmentBookingModal from '../../src/components/AppointmentBookingModal';
 
 export default function AppointmentsPage() {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
+  const handleAppointmentSuccess = (appointment: any) => {
+    console.log('Appointment created:', appointment);
+    // Refresh appointments list or update state
+    setIsBookingModalOpen(false);
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -29,7 +38,10 @@ export default function AppointmentsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
           <p className="text-gray-500 mt-1">Manage patient appointments and schedules</p>
         </div>
-        <button className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
+        <button 
+          onClick={() => setIsBookingModalOpen(true)}
+          className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+        >
           <Plus size={16} className="mr-2" />
           New Appointment
         </button>
@@ -59,11 +71,11 @@ export default function AppointmentsPage() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Completed</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">28</p>
               <div className="flex items-center mt-2">
-                <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">67% success rate</span>
+                <CheckCircle className="h-3 w-3 text-orange-500 mr-1" />
+                <span className="text-sm font-medium text-orange-600">67% success rate</span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center">
               <CheckCircle className="text-white" size={20} />
             </div>
           </div>
@@ -75,11 +87,11 @@ export default function AppointmentsPage() {
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Pending</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
               <div className="flex items-center mt-2">
-                <Clock className="h-3 w-3 text-blue-500 mr-1" />
-                <span className="text-sm font-medium text-blue-600">Next at 10:30 AM</span>
+                <Clock className="h-3 w-3 text-orange-500 mr-1" />
+                <span className="text-sm font-medium text-orange-600">Next at 10:30 AM</span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl flex items-center justify-center">
               <Clock className="text-white" size={20} />
             </div>
           </div>
@@ -143,12 +155,12 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 10:00
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Sarah Johnson</h3>
-                <p className="text-sm text-gray-500">PAT001 • Cardiology Consultation</p>
+                <h3 className="font-semibold text-gray-900">Yogitha S</h3>
+                <p className="text-sm text-gray-500">AH25075452 • Cardiology Consultation</p>
                 <div className="flex items-center mt-1 space-x-4">
                   <div className="flex items-center text-xs text-gray-600">
                     <Stethoscope size={12} className="mr-1" />
@@ -156,17 +168,17 @@ export default function AppointmentsPage() {
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <MapPin size={12} className="mr-1" />
-                    Room 001
+                    ROOM001
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <Phone size={12} className="mr-1" />
-                    +91-9876543231
+                    9988778899
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
                 Scheduled
               </span>
               <div className="flex items-center space-x-2">
@@ -185,12 +197,12 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 09:30
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Michael Rodriguez</h3>
-                <p className="text-sm text-gray-500">PAT002 • Follow-up Checkup</p>
+                <h3 className="font-semibold text-gray-900">James Wilson</h3>
+                <p className="text-sm text-gray-500">PAT002 • Emergency Medicine Consultation</p>
                 <div className="flex items-center mt-1 space-x-4">
                   <div className="flex items-center text-xs text-gray-600">
                     <Stethoscope size={12} className="mr-1" />
@@ -198,17 +210,17 @@ export default function AppointmentsPage() {
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <MapPin size={12} className="mr-1" />
-                    Emergency
+                    ROOM004
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <Phone size={12} className="mr-1" />
-                    +91-9876543233
+                    +1-555-123-4567
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
                 Completed
               </span>
               <div className="flex items-center space-x-2">
@@ -227,11 +239,11 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 14:15
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Emma Watson</h3>
+                <h3 className="font-semibold text-gray-900">Olivia Martinez</h3>
                 <p className="text-sm text-gray-500">PAT003 • Pediatric Consultation</p>
                 <div className="flex items-center mt-1 space-x-4">
                   <div className="flex items-center text-xs text-gray-600">
@@ -240,17 +252,17 @@ export default function AppointmentsPage() {
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <MapPin size={12} className="mr-1" />
-                    Room 002
+                    ROOM002
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <Phone size={12} className="mr-1" />
-                    +91-9876543235
+                    +1-555-987-6543
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
                 Scheduled
               </span>
               <div className="flex items-center space-x-2">
@@ -269,24 +281,24 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-600 to-red-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 11:45
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">James Thompson</h3>
+                <h3 className="font-semibold text-gray-900">Noah Parker</h3>
                 <p className="text-sm text-gray-500">PAT004 • Orthopedic Consultation</p>
                 <div className="flex items-center mt-1 space-x-4">
                   <div className="flex items-center text-xs text-gray-600">
                     <Stethoscope size={12} className="mr-1" />
-                    Dr. Neha Patel
+                    Dr. Sunita Patel
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <MapPin size={12} className="mr-1" />
-                    Room 003
+                    ROOM003
                   </div>
                   <div className="flex items-center text-xs text-gray-600">
                     <Phone size={12} className="mr-1" />
-                    +91-9876543236
+                    +1-555-234-5678
                   </div>
                 </div>
               </div>
@@ -314,6 +326,13 @@ export default function AppointmentsPage() {
           Load More Appointments
         </button>
       </div>
+
+      {/* Appointment Booking Modal */}
+      <AppointmentBookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        onSuccess={handleAppointmentSuccess}
+      />
     </div>
   );
-} 
+}

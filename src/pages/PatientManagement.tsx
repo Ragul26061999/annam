@@ -54,13 +54,12 @@ const PatientManagement: React.FC = () => {
             <SortAsc size={18} className="mr-2" />
             Sort
           </button>
-          <button 
-            className="btn-primary flex items-center"
-            onClick={() => setShowAddModal(true)}
-          >
-            <UserPlus size={18} className="mr-2" />
-            Add Patient
-          </button>
+                      <Link to="/patients/register">
+              <button className="btn-primary flex items-center">
+                <UserPlus size={18} className="mr-2" />
+                Register New Patient
+              </button>
+            </Link>
         </div>
       </div>
       

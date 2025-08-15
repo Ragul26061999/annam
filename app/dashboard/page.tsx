@@ -170,7 +170,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
+        
         {/* Hospital Status */}
         <div className="space-y-5">
           {/* Department Status */}

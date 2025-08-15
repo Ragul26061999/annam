@@ -17,8 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
-  DollarSign,
-  UserPlus
+  DollarSign
 } from 'lucide-react';
 
 interface NavItem {
@@ -33,69 +32,30 @@ const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // Check if current user is receptionist (in real app, this would come from auth context)
-  const isReceptionist = pathname?.startsWith('/receptionist') || false;
-
-  const receptionistNavItems: NavItem[] = [
-    { 
-      href: '/receptionist', 
-      label: 'Dashboard', 
-      icon: <LayoutDashboard size={18} />, 
-      color: 'text-blue-600'
-    },
-    { 
-      href: '/receptionist/register-patient', 
-      label: 'Register Patient', 
-      icon: <UserPlus size={18} />, 
-      color: 'text-orange-600'
-    },
-    { 
-      href: '/receptionist/vitals', 
-      label: 'Record Vitals', 
-      icon: <Activity size={18} />, 
-      color: 'text-green-600'
-    },
-    { 
-      href: '/patients', 
-      label: 'View Patients', 
-      icon: <Users size={18} />, 
-      color: 'text-purple-600',
-      badge: '1,284'
-    },
-    { 
-      href: '/appointments', 
-      label: 'Appointments', 
-      icon: <Calendar size={18} />, 
-      color: 'text-blue-600',
-      badge: '42'
-    },
-  ];
-
-  const adminNavItems: NavItem[] = [
+  const navItems: NavItem[] = [
     { 
       href: '/dashboard', 
       label: 'Dashboard', 
       icon: <LayoutDashboard size={18} />, 
-      color: 'text-blue-600'
+      color: 'text-orange-600'
     },
     { 
       href: '/patients', 
       label: 'Patients', 
       icon: <Users size={18} />, 
-      color: 'text-green-600',
-      badge: '1,284'
+      color: 'text-orange-600'
     },
     { 
       href: '/doctors', 
       label: 'Doctors', 
       icon: <Stethoscope size={18} />, 
-      color: 'text-purple-600'
+      color: 'text-orange-600'
     },
     { 
       href: '/staff', 
       label: 'Staff', 
       icon: <UsersRound size={18} />, 
-      color: 'text-indigo-600'
+      color: 'text-orange-600'
     },
     { 
       href: '/appointments', 
@@ -108,29 +68,27 @@ const Sidebar: React.FC = () => {
       href: '/workstation', 
       label: 'Workstation', 
       icon: <Activity size={18} />, 
-      color: 'text-teal-600'
+      color: 'text-orange-600'
     },
     { 
       href: '/pharmacy', 
       label: 'Pharmacy', 
       icon: <Pill size={18} />, 
-      color: 'text-red-600'
+      color: 'text-orange-600'
     },
     { 
       href: '/beds', 
       label: 'Bed Management', 
       icon: <Bed size={18} />, 
-      color: 'text-pink-600'
+      color: 'text-orange-600'
     },
     { 
       href: '/finance', 
       label: 'Finance', 
       icon: <DollarSign size={18} />, 
-      color: 'text-emerald-600'
+      color: 'text-orange-600'
     },
   ];
-
-  const navItems = isReceptionist ? receptionistNavItems : adminNavItems;
 
   const handleLogout = () => {
     // Add logout logic here
@@ -138,7 +96,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col shadow-sm transition-all duration-300 ease-in-out`}>
+    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} glass-sidebar h-full flex flex-col shadow-xl transition-all duration-300 ease-in-out`}>
       {/* Header */}
       <div className="h-20 border-b border-gray-100 flex items-center justify-between px-4">
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : ''}`}>
@@ -183,19 +141,19 @@ const Sidebar: React.FC = () => {
             <Link
               key={item.href}
               href={item.href}
-              className={`group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden ${
+              className={`group flex items-center px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden backdrop-blur-sm ${
                 isActive 
-                  ? 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-600 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-orange-100/90 to-orange-200/70 text-orange-700 shadow-lg border border-orange-200/50' 
+                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-orange-50/80 hover:to-orange-100/60 hover:text-orange-700 hover:shadow-md'
               }`}
             >
               {/* Active indicator */}
               {isActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-orange-500 rounded-r-full"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-400 to-orange-500 rounded-r-full shadow-sm"></div>
               )}
               
               {/* Icon */}
-              <div className={`flex-shrink-0 ${isActive ? 'text-orange-600' : item.color} transition-colors duration-200`}>
+              <div className={`flex-shrink-0 ${isActive ? 'text-orange-600' : 'text-orange-500'} transition-colors duration-300`}>
                 {item.icon}
               </div>
               
@@ -224,15 +182,11 @@ const Sidebar: React.FC = () => {
         <div className="px-2 py-3 border-t border-gray-100">
           <div className="flex items-center space-x-3 p-2.5 bg-gray-50 rounded-xl">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-              {isReceptionist ? 'M' : 'DR'}
+              DR
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-gray-900 text-sm">
-                {isReceptionist ? 'Monica' : 'Dr. Selvan'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {isReceptionist ? 'Receptionist' : 'Chief Doctor (MD)'}
-              </p>
+              <p className="font-semibold text-gray-900 text-sm">Dr. Selvan</p>
+              <p className="text-xs text-gray-500">Chief Doctor (MD)</p>
             </div>
           </div>
         </div>
@@ -257,4 +211,4 @@ const Sidebar: React.FC = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

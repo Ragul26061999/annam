@@ -46,7 +46,7 @@ export default function DoctorsPage() {
                 <span className="text-sm font-medium text-green-600">2 new this month</span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
               <Stethoscope className="text-white" size={20} />
             </div>
           </div>
@@ -62,7 +62,7 @@ export default function DoctorsPage() {
                 <span className="text-sm font-medium text-green-600">75% available</span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center">
               <Activity className="text-white" size={20} />
             </div>
           </div>
@@ -78,7 +78,7 @@ export default function DoctorsPage() {
                 <span className="text-sm font-medium text-blue-600">42 pending</span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl flex items-center justify-center">
               <Users className="text-white" size={20} />
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function DoctorsPage() {
                 <span className="text-sm font-medium text-yellow-600">Excellent</span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-600 to-red-500 rounded-xl flex items-center justify-center">
               <Award className="text-white" size={20} />
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function DoctorsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 PS
               </div>
               <div className="ml-3">
@@ -170,13 +170,13 @@ export default function DoctorsPage() {
             </div>
           </div>
 
-          <div className="bg-purple-50 rounded-xl p-3 mb-4">
+          <div className="bg-orange-50 rounded-xl p-3 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-purple-700">Today's Schedule</p>
-              <span className="text-xs text-purple-600">12/30 slots</span>
+              <p className="text-xs font-medium text-orange-700">Today's Schedule</p>
+              <span className="text-xs text-orange-600">12/30 slots</span>
             </div>
-            <p className="text-sm text-purple-900">9:00 AM - 5:00 PM</p>
-            <p className="text-xs text-purple-600">Next: Sarah Johnson at 10:00 AM</p>
+            <p className="text-sm text-orange-900">9:00 AM - 5:00 PM</p>
+            <p className="text-xs text-orange-600">Next: Sarah Johnson at 10:00 AM</p>
           </div>
 
           <div className="flex items-center justify-between mb-4">
@@ -207,7 +207,7 @@ export default function DoctorsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 RK
               </div>
               <div className="ml-3">
@@ -240,13 +240,13 @@ export default function DoctorsPage() {
             </div>
           </div>
 
-          <div className="bg-blue-50 rounded-xl p-3 mb-4">
+          <div className="bg-orange-50 rounded-xl p-3 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-blue-700">Today's Schedule</p>
-              <span className="text-xs text-blue-600">18/25 slots</span>
+              <p className="text-xs font-medium text-orange-700">Today's Schedule</p>
+              <span className="text-xs text-orange-600">18/25 slots</span>
             </div>
-            <p className="text-sm text-blue-900">8:00 AM - 4:00 PM</p>
-            <p className="text-xs text-blue-600">Next: Emma Watson at 2:15 PM</p>
+            <p className="text-sm text-orange-900">8:00 AM - 4:00 PM</p>
+            <p className="text-xs text-orange-600">Next: Emma Watson at 2:15 PM</p>
           </div>
 
           <div className="flex items-center justify-between mb-4">
@@ -277,7 +277,7 @@ export default function DoctorsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl flex items-center justify-center text-white font-bold text-sm">
                 AS
               </div>
               <div className="ml-3">
@@ -352,4 +352,4 @@ export default function DoctorsPage() {
       </div>
     </div>
   );
-} 
+}

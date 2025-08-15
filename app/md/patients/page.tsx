@@ -1,4 +1,6 @@
+'use client';
 import React from 'react';
+import Link from 'next/link';
 import { 
   Users, 
   Search, 
@@ -27,10 +29,12 @@ export default function PatientsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
           <p className="text-gray-500 mt-1">Manage patient records and information</p>
         </div>
-        <button className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
-          <UserPlus size={16} className="mr-2" />
-          Add Patient
-        </button>
+        <Link href="/patients/register">
+          <button className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
+            <UserPlus size={16} className="mr-2" />
+            Register New Patient
+          </button>
+        </Link>
       </div>
 
       {/* Stats Cards */}

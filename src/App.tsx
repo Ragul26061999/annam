@@ -13,6 +13,7 @@ import PatientDetails from './pages/PatientDetails';
 import DoctorsManagement from './pages/DoctorsManagement';
 import DoctorDetails from './pages/DoctorDetails';
 import StaffManagement from './pages/StaffManagement';
+import AppointmentDashboard from '../pages/AppointmentDashboard';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -49,6 +50,7 @@ function App() {
           <Route path="doctors/:id" element={<DoctorDetails />} />
           <Route path="staff" element={<StaffManagement />} />
           <Route path="appointments" element={<Appointments />} />
+          <Route path="appointment-dashboard" element={<AppointmentDashboard />} />
           <Route path="workstation" element={<Workstation />} />
           <Route path="pharmacy" element={<Pharmacy />} />
           <Route path="beds" element={<BedManagement />} />
