@@ -15,6 +15,46 @@ const departmentIcons: Record<string, { icon: any; color: string }> = {
   'General': { icon: Stethoscope, color: 'text-gray-500 bg-gray-100' },
 };
 
+// Color theme helpers for mixed color cards
+const getCardGradient = (doctorId: string | undefined) => {
+  const colors = [
+    'bg-gradient-to-r from-blue-400 to-blue-500',
+    'bg-gradient-to-r from-green-400 to-green-500', 
+    'bg-gradient-to-r from-purple-400 to-purple-500',
+    'bg-gradient-to-r from-red-400 to-red-500',
+    'bg-gradient-to-r from-indigo-400 to-indigo-500',
+    'bg-gradient-to-r from-pink-400 to-pink-500'
+  ];
+  const index = doctorId ? doctorId.length % colors.length : 0;
+  return colors[index];
+};
+
+const getCardButtonColors = (doctorId: string | undefined) => {
+  const colorSets = [
+    { schedule: 'bg-blue-50 text-blue-600 hover:bg-blue-100', edit: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { schedule: 'bg-green-50 text-green-600 hover:bg-green-100', edit: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { schedule: 'bg-purple-50 text-purple-600 hover:bg-purple-100', edit: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { schedule: 'bg-red-50 text-red-600 hover:bg-red-100', edit: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { schedule: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100', edit: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { schedule: 'bg-pink-50 text-pink-600 hover:bg-pink-100', edit: 'bg-pink-100 text-pink-700 hover:bg-pink-200' }
+  ];
+  const index = doctorId ? doctorId.length % colorSets.length : 0;
+  return colorSets[index];
+};
+
+const getTableButtonColors = (doctorId: string | undefined) => {
+  const colorSets = [
+    { schedule: 'text-blue-600 hover:bg-blue-50', edit: 'text-blue-700 hover:bg-blue-100' },
+    { schedule: 'text-green-600 hover:bg-green-50', edit: 'text-green-700 hover:bg-green-100' },
+    { schedule: 'text-purple-600 hover:bg-purple-50', edit: 'text-purple-700 hover:bg-purple-100' },
+    { schedule: 'text-red-600 hover:bg-red-50', edit: 'text-red-700 hover:bg-red-100' },
+    { schedule: 'text-indigo-600 hover:bg-indigo-50', edit: 'text-indigo-700 hover:bg-indigo-100' },
+    { schedule: 'text-pink-600 hover:bg-pink-50', edit: 'text-pink-700 hover:bg-pink-100' }
+  ];
+  const index = doctorId ? doctorId.length % colorSets.length : 0;
+  return colorSets[index];
+};
+
 interface SessionTiming {
   startTime: string;
   endTime: string;
@@ -419,7 +459,7 @@ const DoctorManagementDashboard: React.FC = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center">
                         <div className="relative">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-semibold">
+                          <div className={`h-12 w-12 rounded-full ${getCardGradient(doctor.id)} flex items-center justify-center text-white font-semibold`}>
                             {doctor.user?.name?.charAt(0) || 'D'}
                           </div>
                           <div className={`absolute -bottom-1 -right-1 p-1 rounded-full ${color}`}>
@@ -470,7 +510,7 @@ const DoctorManagementDashboard: React.FC = () => {
 
                     <div className="flex justify-between space-x-2 mt-6">
                       <button 
-                        className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                        className={`flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id).schedule} rounded-lg transition-colors text-sm font-medium`}
                         onClick={() => {
                           setSelectedDoctor(doctor);
                           setShowScheduleModal(true);
@@ -480,7 +520,7 @@ const DoctorManagementDashboard: React.FC = () => {
                         Schedule
                       </button>
                       <button 
-                        className="flex-1 flex items-center justify-center px-3 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium"
+                        className={`flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id).edit} rounded-lg transition-colors text-sm font-medium`}
                         onClick={() => openEditModal(doctor)}
                       >
                         <Edit size={14} className="mr-1" />
@@ -514,7 +554,7 @@ const DoctorManagementDashboard: React.FC = () => {
                     <tr key={doctor.id} className={`border-t border-gray-100/50 ${index % 2 === 0 ? 'bg-white/40' : 'bg-gray-50/40'} backdrop-blur-sm`}>
                       <td className="py-4 px-6">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-semibold">
+                          <div className={`h-10 w-10 rounded-full ${getCardGradient(doctor.id)} flex items-center justify-center text-white font-semibold`}>
                             {doctor.user?.name?.charAt(0) || 'D'}
                           </div>
                           <div className="ml-3">
@@ -534,7 +574,7 @@ const DoctorManagementDashboard: React.FC = () => {
                       <td className="py-4 px-6">
                         <div className="flex justify-end space-x-2">
                           <button 
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className={`p-2 ${getTableButtonColors(doctor.id).schedule} rounded-lg transition-colors`}
                             onClick={() => {
                               setSelectedDoctor(doctor);
                               setShowScheduleModal(true);
@@ -543,7 +583,7 @@ const DoctorManagementDashboard: React.FC = () => {
                             <Calendar size={18} />
                           </button>
                           <button 
-                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            className={`p-2 ${getTableButtonColors(doctor.id).edit} rounded-lg transition-colors`}
                             onClick={() => openEditModal(doctor)}
                           >
                             <Edit size={18} />

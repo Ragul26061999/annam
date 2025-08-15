@@ -787,6 +787,79 @@ const departmentIcons = {
         color: 'text-gray-500 bg-gray-100'
     }
 };
+// Color theme helpers for mixed color cards
+const getCardGradient = (doctorId)=>{
+    const colors = [
+        'bg-gradient-to-r from-blue-400 to-blue-500',
+        'bg-gradient-to-r from-green-400 to-green-500',
+        'bg-gradient-to-r from-purple-400 to-purple-500',
+        'bg-gradient-to-r from-red-400 to-red-500',
+        'bg-gradient-to-r from-indigo-400 to-indigo-500',
+        'bg-gradient-to-r from-pink-400 to-pink-500'
+    ];
+    const index = doctorId ? doctorId.length % colors.length : 0;
+    return colors[index];
+};
+const getCardButtonColors = (doctorId)=>{
+    const colorSets = [
+        {
+            schedule: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
+            edit: 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+        },
+        {
+            schedule: 'bg-green-50 text-green-600 hover:bg-green-100',
+            edit: 'bg-green-100 text-green-700 hover:bg-green-200'
+        },
+        {
+            schedule: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
+            edit: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+        },
+        {
+            schedule: 'bg-red-50 text-red-600 hover:bg-red-100',
+            edit: 'bg-red-100 text-red-700 hover:bg-red-200'
+        },
+        {
+            schedule: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100',
+            edit: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+        },
+        {
+            schedule: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
+            edit: 'bg-pink-100 text-pink-700 hover:bg-pink-200'
+        }
+    ];
+    const index = doctorId ? doctorId.length % colorSets.length : 0;
+    return colorSets[index];
+};
+const getTableButtonColors = (doctorId)=>{
+    const colorSets = [
+        {
+            schedule: 'text-blue-600 hover:bg-blue-50',
+            edit: 'text-blue-700 hover:bg-blue-100'
+        },
+        {
+            schedule: 'text-green-600 hover:bg-green-50',
+            edit: 'text-green-700 hover:bg-green-100'
+        },
+        {
+            schedule: 'text-purple-600 hover:bg-purple-50',
+            edit: 'text-purple-700 hover:bg-purple-100'
+        },
+        {
+            schedule: 'text-red-600 hover:bg-red-50',
+            edit: 'text-red-700 hover:bg-red-100'
+        },
+        {
+            schedule: 'text-indigo-600 hover:bg-indigo-50',
+            edit: 'text-indigo-700 hover:bg-indigo-100'
+        },
+        {
+            schedule: 'text-pink-600 hover:bg-pink-50',
+            edit: 'text-pink-700 hover:bg-pink-100'
+        }
+    ];
+    const index = doctorId ? doctorId.length % colorSets.length : 0;
+    return colorSets[index];
+};
 const DoctorManagementDashboard = ()=>{
     const [doctors, setDoctors] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
     const [filteredDoctors, setFilteredDoctors] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
@@ -1045,12 +1118,12 @@ const DoctorManagementDashboard = ()=>{
                 className: "animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"
             }, void 0, false, {
                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                lineNumber: 280,
+                lineNumber: 320,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-            lineNumber: 279,
+            lineNumber: 319,
             columnNumber: 7
         }, this);
     }
@@ -1071,7 +1144,7 @@ const DoctorManagementDashboard = ()=>{
                                         children: "Doctor Management"
                                     }, void 0, false, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 292,
+                                        lineNumber: 332,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1079,13 +1152,13 @@ const DoctorManagementDashboard = ()=>{
                                         children: "Manage hospital doctors and their schedules"
                                     }, void 0, false, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 295,
+                                        lineNumber: 335,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 291,
+                                lineNumber: 331,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1100,28 +1173,28 @@ const DoctorManagementDashboard = ()=>{
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 299,
+                                        lineNumber: 339,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 298,
+                                    lineNumber: 338,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 297,
+                                lineNumber: 337,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                        lineNumber: 290,
+                        lineNumber: 330,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 289,
+                    lineNumber: 329,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1137,17 +1210,17 @@ const DoctorManagementDashboard = ()=>{
                                     className: "text-gray-600"
                                 }, void 0, false, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 312,
+                                    lineNumber: 352,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 308,
+                                lineNumber: 348,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                            lineNumber: 307,
+                            lineNumber: 347,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1171,12 +1244,12 @@ const DoctorManagementDashboard = ()=>{
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 335,
+                                                lineNumber: 375,
                                                 columnNumber: 21
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                            lineNumber: 334,
+                                            lineNumber: 374,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1184,19 +1257,19 @@ const DoctorManagementDashboard = ()=>{
                                             children: dept
                                         }, void 0, false, {
                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                            lineNumber: 337,
+                                            lineNumber: 377,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, dept, true, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 323,
+                                    lineNumber: 363,
                                     columnNumber: 17
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                            lineNumber: 316,
+                            lineNumber: 356,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1209,23 +1282,23 @@ const DoctorManagementDashboard = ()=>{
                                     className: "text-gray-600"
                                 }, void 0, false, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 348,
+                                    lineNumber: 388,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 344,
+                                lineNumber: 384,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                            lineNumber: 343,
+                            lineNumber: 383,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 306,
+                    lineNumber: 346,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1247,7 +1320,7 @@ const DoctorManagementDashboard = ()=>{
                                                 className: "pl-10 pr-4 py-3 bg-gray-50/80 backdrop-blur-sm rounded-xl w-96 focus:outline-none focus:ring-2 focus:ring-blue-300 border border-gray-200/50"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 358,
+                                                lineNumber: 398,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"], {
@@ -1255,13 +1328,13 @@ const DoctorManagementDashboard = ()=>{
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 365,
+                                                lineNumber: 405,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 357,
+                                        lineNumber: 397,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1272,7 +1345,7 @@ const DoctorManagementDashboard = ()=>{
                                                 className: "mr-2 text-gray-600"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 368,
+                                                lineNumber: 408,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1280,19 +1353,19 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Filter"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 369,
+                                                lineNumber: 409,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 367,
+                                        lineNumber: 407,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 356,
+                                lineNumber: 396,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1307,7 +1380,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Cards"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 375,
+                                                lineNumber: 415,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1316,13 +1389,13 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Table"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 383,
+                                                lineNumber: 423,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 374,
+                                        lineNumber: 414,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["motion"].button, {
@@ -1340,31 +1413,31 @@ const DoctorManagementDashboard = ()=>{
                                                 className: "mr-2"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 398,
+                                                lineNumber: 438,
                                                 columnNumber: 17
                                             }, this),
                                             "Add Doctor"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 392,
+                                        lineNumber: 432,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 373,
+                                lineNumber: 413,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                        lineNumber: 355,
+                        lineNumber: 395,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 354,
+                    lineNumber: 394,
                     columnNumber: 9
                 }, this),
                 view === 'card' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1397,11 +1470,11 @@ const DoctorManagementDashboard = ()=>{
                                                         className: "relative",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                className: "h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-semibold",
+                                                                className: `h-12 w-12 rounded-full ${getCardGradient(doctor.id)} flex items-center justify-center text-white font-semibold`,
                                                                 children: doctor.user?.name?.charAt(0) || 'D'
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 422,
+                                                                lineNumber: 462,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1410,18 +1483,18 @@ const DoctorManagementDashboard = ()=>{
                                                                     size: 12
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 426,
+                                                                    lineNumber: 466,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 425,
+                                                                lineNumber: 465,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 421,
+                                                        lineNumber: 461,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1432,7 +1505,7 @@ const DoctorManagementDashboard = ()=>{
                                                                 children: doctor.user?.name
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 430,
+                                                                lineNumber: 470,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1440,19 +1513,19 @@ const DoctorManagementDashboard = ()=>{
                                                                 children: doctor.specialization
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 431,
+                                                                lineNumber: 471,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 429,
+                                                        lineNumber: 469,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 420,
+                                                lineNumber: 460,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1461,18 +1534,18 @@ const DoctorManagementDashboard = ()=>{
                                                     size: 20
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 435,
+                                                    lineNumber: 475,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 434,
+                                                lineNumber: 474,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 419,
+                                        lineNumber: 459,
                                         columnNumber: 21
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1489,14 +1562,14 @@ const DoctorManagementDashboard = ()=>{
                                                                 className: "mr-1"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 442,
+                                                                lineNumber: 482,
                                                                 columnNumber: 27
                                                             }, this),
                                                             "Department"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 441,
+                                                        lineNumber: 481,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1504,13 +1577,13 @@ const DoctorManagementDashboard = ()=>{
                                                         children: doctor.department
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 445,
+                                                        lineNumber: 485,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 440,
+                                                lineNumber: 480,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1524,14 +1597,14 @@ const DoctorManagementDashboard = ()=>{
                                                                 className: "mr-1"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 449,
+                                                                lineNumber: 489,
                                                                 columnNumber: 27
                                                             }, this),
                                                             "Room"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 448,
+                                                        lineNumber: 488,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1539,13 +1612,13 @@ const DoctorManagementDashboard = ()=>{
                                                         children: doctor.room_number
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 452,
+                                                        lineNumber: 492,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 447,
+                                                lineNumber: 487,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1559,14 +1632,14 @@ const DoctorManagementDashboard = ()=>{
                                                                 className: "mr-1"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 456,
+                                                                lineNumber: 496,
                                                                 columnNumber: 27
                                                             }, this),
                                                             "Hours"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 455,
+                                                        lineNumber: 495,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1578,13 +1651,13 @@ const DoctorManagementDashboard = ()=>{
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 459,
+                                                        lineNumber: 499,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 454,
+                                                lineNumber: 494,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1595,7 +1668,7 @@ const DoctorManagementDashboard = ()=>{
                                                         children: "Status"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 464,
+                                                        lineNumber: 504,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1603,26 +1676,26 @@ const DoctorManagementDashboard = ()=>{
                                                         children: formatStatus(doctor.availability_status)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 465,
+                                                        lineNumber: 505,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 463,
+                                                lineNumber: 503,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 439,
+                                        lineNumber: 479,
                                         columnNumber: 21
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex justify-between space-x-2 mt-6",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                className: "flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium",
+                                                className: `flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id).schedule} rounded-lg transition-colors text-sm font-medium`,
                                                 onClick: ()=>{
                                                     setSelectedDoctor(doctor);
                                                     setShowScheduleModal(true);
@@ -1633,18 +1706,18 @@ const DoctorManagementDashboard = ()=>{
                                                         className: "mr-1"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 479,
+                                                        lineNumber: 519,
                                                         columnNumber: 25
                                                     }, this),
                                                     "Schedule"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 472,
+                                                lineNumber: 512,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                className: "flex-1 flex items-center justify-center px-3 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium",
+                                                className: `flex-1 flex items-center justify-center px-3 py-2 ${getCardButtonColors(doctor.id).edit} rounded-lg transition-colors text-sm font-medium`,
                                                 onClick: ()=>openEditModal(doctor),
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$square$2d$pen$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Edit$3e$__["Edit"], {
@@ -1652,37 +1725,37 @@ const DoctorManagementDashboard = ()=>{
                                                         className: "mr-1"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 486,
+                                                        lineNumber: 526,
                                                         columnNumber: 25
                                                     }, this),
                                                     "Edit"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 482,
+                                                lineNumber: 522,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 471,
+                                        lineNumber: 511,
                                         columnNumber: 21
                                     }, this)
                                 ]
                             }, doctor.id, true, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 412,
+                                lineNumber: 452,
                                 columnNumber: 19
                             }, this);
                         })
                     }, void 0, false, {
                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                        lineNumber: 408,
+                        lineNumber: 448,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 407,
+                    lineNumber: 447,
                     columnNumber: 11
                 }, this),
                 view === 'table' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1701,7 +1774,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Doctor"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 504,
+                                                lineNumber: 544,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1709,7 +1782,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Specialty"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 505,
+                                                lineNumber: 545,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1717,7 +1790,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Department"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 506,
+                                                lineNumber: 546,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1725,7 +1798,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Room"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 507,
+                                                lineNumber: 547,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1733,7 +1806,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Status"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 508,
+                                                lineNumber: 548,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1741,18 +1814,18 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Actions"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 509,
+                                                lineNumber: 549,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 503,
+                                        lineNumber: 543,
                                         columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 502,
+                                    lineNumber: 542,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -1765,11 +1838,11 @@ const DoctorManagementDashboard = ()=>{
                                                         className: "flex items-center",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                className: "h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-semibold",
+                                                                className: `h-10 w-10 rounded-full ${getCardGradient(doctor.id)} flex items-center justify-center text-white font-semibold`,
                                                                 children: doctor.user?.name?.charAt(0) || 'D'
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 517,
+                                                                lineNumber: 557,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1780,7 +1853,7 @@ const DoctorManagementDashboard = ()=>{
                                                                         children: doctor.user?.name
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 521,
+                                                                        lineNumber: 561,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1788,24 +1861,24 @@ const DoctorManagementDashboard = ()=>{
                                                                         children: doctor.user?.email
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 522,
+                                                                        lineNumber: 562,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 520,
+                                                                lineNumber: 560,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 516,
+                                                        lineNumber: 556,
                                                         columnNumber: 25
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 515,
+                                                    lineNumber: 555,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1813,7 +1886,7 @@ const DoctorManagementDashboard = ()=>{
                                                     children: doctor.specialization
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 526,
+                                                    lineNumber: 566,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1821,7 +1894,7 @@ const DoctorManagementDashboard = ()=>{
                                                     children: doctor.department
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 527,
+                                                    lineNumber: 567,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1829,7 +1902,7 @@ const DoctorManagementDashboard = ()=>{
                                                     children: doctor.room_number
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 528,
+                                                    lineNumber: 568,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1839,12 +1912,12 @@ const DoctorManagementDashboard = ()=>{
                                                         children: formatStatus(doctor.availability_status)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 530,
+                                                        lineNumber: 570,
                                                         columnNumber: 25
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 529,
+                                                    lineNumber: 569,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1853,7 +1926,7 @@ const DoctorManagementDashboard = ()=>{
                                                         className: "flex justify-end space-x-2",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                className: "p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+                                                                className: `p-2 ${getTableButtonColors(doctor.id).schedule} rounded-lg transition-colors`,
                                                                 onClick: ()=>{
                                                                     setSelectedDoctor(doctor);
                                                                     setShowScheduleModal(true);
@@ -1862,27 +1935,27 @@ const DoctorManagementDashboard = ()=>{
                                                                     size: 18
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 543,
+                                                                    lineNumber: 583,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 536,
+                                                                lineNumber: 576,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                className: "p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors",
+                                                                className: `p-2 ${getTableButtonColors(doctor.id).edit} rounded-lg transition-colors`,
                                                                 onClick: ()=>openEditModal(doctor),
                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$square$2d$pen$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Edit$3e$__["Edit"], {
                                                                     size: 18
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 549,
+                                                                    lineNumber: 589,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 545,
+                                                                lineNumber: 585,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1891,50 +1964,50 @@ const DoctorManagementDashboard = ()=>{
                                                                     size: 18
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 552,
+                                                                    lineNumber: 592,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 551,
+                                                                lineNumber: 591,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 535,
+                                                        lineNumber: 575,
                                                         columnNumber: 25
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 534,
+                                                    lineNumber: 574,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, doctor.id, true, {
                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                            lineNumber: 514,
+                                            lineNumber: 554,
                                             columnNumber: 21
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 512,
+                                    lineNumber: 552,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                            lineNumber: 501,
+                            lineNumber: 541,
                             columnNumber: 15
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                        lineNumber: 500,
+                        lineNumber: 540,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 499,
+                    lineNumber: 539,
                     columnNumber: 11
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -1977,7 +2050,7 @@ const DoctorManagementDashboard = ()=>{
                                                         children: showAddModal ? 'Add New Doctor' : 'Edit Doctor'
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 582,
+                                                        lineNumber: 622,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1992,18 +2065,18 @@ const DoctorManagementDashboard = ()=>{
                                                             size: 24
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 594,
+                                                            lineNumber: 634,
                                                             columnNumber: 25
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 585,
+                                                        lineNumber: 625,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 581,
+                                                lineNumber: 621,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -2019,14 +2092,14 @@ const DoctorManagementDashboard = ()=>{
                                                                         className: "mr-2 text-blue-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 602,
+                                                                        lineNumber: 642,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     "Personal Information"
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 601,
+                                                                lineNumber: 641,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2039,7 +2112,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Full Name"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 607,
+                                                                                lineNumber: 647,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2052,13 +2125,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 608,
+                                                                                lineNumber: 648,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 606,
+                                                                        lineNumber: 646,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2068,7 +2141,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Email"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 616,
+                                                                                lineNumber: 656,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2081,13 +2154,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 617,
+                                                                                lineNumber: 657,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 615,
+                                                                        lineNumber: 655,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2097,7 +2170,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Phone"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 625,
+                                                                                lineNumber: 665,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2110,13 +2183,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 626,
+                                                                                lineNumber: 666,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 624,
+                                                                        lineNumber: 664,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2126,7 +2199,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "License Number"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 634,
+                                                                                lineNumber: 674,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2139,19 +2212,19 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 635,
+                                                                                lineNumber: 675,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 633,
+                                                                        lineNumber: 673,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 605,
+                                                                lineNumber: 645,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2162,7 +2235,7 @@ const DoctorManagementDashboard = ()=>{
                                                                         children: "Address"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 644,
+                                                                        lineNumber: 684,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -2175,19 +2248,19 @@ const DoctorManagementDashboard = ()=>{
                                                                         className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 645,
+                                                                        lineNumber: 685,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 643,
+                                                                lineNumber: 683,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 600,
+                                                        lineNumber: 640,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2200,14 +2273,14 @@ const DoctorManagementDashboard = ()=>{
                                                                         className: "mr-2 text-purple-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 657,
+                                                                        lineNumber: 697,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     "Professional Information"
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 656,
+                                                                lineNumber: 696,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2220,7 +2293,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Specialization"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 662,
+                                                                                lineNumber: 702,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2236,7 +2309,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                         children: "Select Specialization"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                        lineNumber: 668,
+                                                                                        lineNumber: 708,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     specializations.map((spec)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2244,19 +2317,19 @@ const DoctorManagementDashboard = ()=>{
                                                                                             children: spec
                                                                                         }, spec, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 670,
+                                                                                            lineNumber: 710,
                                                                                             columnNumber: 33
                                                                                         }, this))
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 663,
+                                                                                lineNumber: 703,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 661,
+                                                                        lineNumber: 701,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2266,7 +2339,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Department"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 675,
+                                                                                lineNumber: 715,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2282,7 +2355,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                         children: "Select Department"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                        lineNumber: 681,
+                                                                                        lineNumber: 721,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     departments.filter((dept)=>dept !== 'All').map((dept)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2290,19 +2363,19 @@ const DoctorManagementDashboard = ()=>{
                                                                                             children: dept
                                                                                         }, dept, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 683,
+                                                                                            lineNumber: 723,
                                                                                             columnNumber: 33
                                                                                         }, this))
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 676,
+                                                                                lineNumber: 716,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 674,
+                                                                        lineNumber: 714,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2312,7 +2385,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Qualification"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 688,
+                                                                                lineNumber: 728,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2325,13 +2398,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 689,
+                                                                                lineNumber: 729,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 687,
+                                                                        lineNumber: 727,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2341,7 +2414,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Experience (Years)"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 697,
+                                                                                lineNumber: 737,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2354,13 +2427,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 698,
+                                                                                lineNumber: 738,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 696,
+                                                                        lineNumber: 736,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2370,7 +2443,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Consultation Fee"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 706,
+                                                                                lineNumber: 746,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2383,13 +2456,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 707,
+                                                                                lineNumber: 747,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 705,
+                                                                        lineNumber: 745,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2399,7 +2472,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: "Room Number"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 715,
+                                                                                lineNumber: 755,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2412,25 +2485,25 @@ const DoctorManagementDashboard = ()=>{
                                                                                 className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 716,
+                                                                                lineNumber: 756,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 714,
+                                                                        lineNumber: 754,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 660,
+                                                                lineNumber: 700,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 655,
+                                                        lineNumber: 695,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2443,14 +2516,14 @@ const DoctorManagementDashboard = ()=>{
                                                                         className: "mr-2 text-orange-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 729,
+                                                                        lineNumber: 769,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     "Session-Based Availability"
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 728,
+                                                                lineNumber: 768,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2461,7 +2534,7 @@ const DoctorManagementDashboard = ()=>{
                                                                         children: "Available Sessions"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 735,
+                                                                        lineNumber: 775,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2505,7 +2578,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                         className: "sr-only"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                        lineNumber: 743,
+                                                                                        lineNumber: 783,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -2519,7 +2592,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                                     children: session.icon
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                                    lineNumber: 764,
+                                                                                                    lineNumber: 804,
                                                                                                     columnNumber: 37
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2527,7 +2600,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                                     children: session.label
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                                    lineNumber: 765,
+                                                                                                    lineNumber: 805,
                                                                                                     columnNumber: 37
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2535,35 +2608,35 @@ const DoctorManagementDashboard = ()=>{
                                                                                                     children: session.time
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                                    lineNumber: 766,
+                                                                                                    lineNumber: 806,
                                                                                                     columnNumber: 37
                                                                                                 }, this)
                                                                                             ]
                                                                                         }, void 0, true, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 763,
+                                                                                            lineNumber: 803,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                        lineNumber: 755,
+                                                                                        lineNumber: 795,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, session.key, true, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 742,
+                                                                                lineNumber: 782,
                                                                                 columnNumber: 31
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 736,
+                                                                        lineNumber: 776,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 734,
+                                                                lineNumber: 774,
                                                                 columnNumber: 25
                                                             }, this),
                                                             formData.availableSessions.map((sessionKey)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2577,7 +2650,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                     children: sessionKey === 'morning' ? '🌅' : sessionKey === 'afternoon' ? '☀️' : '🌆'
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                    lineNumber: 778,
+                                                                                    lineNumber: 818,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 sessionKey,
@@ -2585,7 +2658,7 @@ const DoctorManagementDashboard = ()=>{
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                            lineNumber: 777,
+                                                                            lineNumber: 817,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2598,7 +2671,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                             children: "Start Time"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 785,
+                                                                                            lineNumber: 825,
                                                                                             columnNumber: 33
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2617,13 +2690,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                             className: "w-full px-3 py-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white/90 backdrop-blur-sm"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 786,
+                                                                                            lineNumber: 826,
                                                                                             columnNumber: 33
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                    lineNumber: 784,
+                                                                                    lineNumber: 824,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2633,7 +2706,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                             children: "End Time"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 803,
+                                                                                            lineNumber: 843,
                                                                                             columnNumber: 33
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2652,13 +2725,13 @@ const DoctorManagementDashboard = ()=>{
                                                                                             className: "w-full px-3 py-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white/90 backdrop-blur-sm"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 804,
+                                                                                            lineNumber: 844,
                                                                                             columnNumber: 33
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                    lineNumber: 802,
+                                                                                    lineNumber: 842,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2668,7 +2741,7 @@ const DoctorManagementDashboard = ()=>{
                                                                                             children: "Max Patients"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 821,
+                                                                                            lineNumber: 861,
                                                                                             columnNumber: 33
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2689,25 +2762,25 @@ const DoctorManagementDashboard = ()=>{
                                                                                             className: "w-full px-3 py-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white/90 backdrop-blur-sm"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                            lineNumber: 822,
+                                                                                            lineNumber: 862,
                                                                                             columnNumber: 33
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                    lineNumber: 820,
+                                                                                    lineNumber: 860,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                            lineNumber: 783,
+                                                                            lineNumber: 823,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     ]
                                                                 }, sessionKey, true, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 776,
+                                                                    lineNumber: 816,
                                                                     columnNumber: 27
                                                                 }, this)),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2719,7 +2792,7 @@ const DoctorManagementDashboard = ()=>{
                                                                         readOnly: true
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 846,
+                                                                        lineNumber: 886,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2728,13 +2801,13 @@ const DoctorManagementDashboard = ()=>{
                                                                         readOnly: true
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 847,
+                                                                        lineNumber: 887,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 845,
+                                                                lineNumber: 885,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2745,7 +2818,7 @@ const DoctorManagementDashboard = ()=>{
                                                                         children: "Working Days"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 850,
+                                                                        lineNumber: 890,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2774,18 +2847,18 @@ const DoctorManagementDashboard = ()=>{
                                                                                 children: day
                                                                             }, day, false, {
                                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                                lineNumber: 853,
+                                                                                lineNumber: 893,
                                                                                 columnNumber: 31
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 851,
+                                                                        lineNumber: 891,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 849,
+                                                                lineNumber: 889,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2802,7 +2875,7 @@ const DoctorManagementDashboard = ()=>{
                                                                         className: "h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 874,
+                                                                        lineNumber: 914,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -2811,31 +2884,31 @@ const DoctorManagementDashboard = ()=>{
                                                                         children: "Available for emergency calls"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                        lineNumber: 881,
+                                                                        lineNumber: 921,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                lineNumber: 873,
+                                                                lineNumber: 913,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 727,
+                                                        lineNumber: 767,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 598,
+                                                lineNumber: 638,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 580,
+                                        lineNumber: 620,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2852,7 +2925,7 @@ const DoctorManagementDashboard = ()=>{
                                                 children: "Cancel"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 890,
+                                                lineNumber: 930,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["motion"].button, {
@@ -2870,41 +2943,41 @@ const DoctorManagementDashboard = ()=>{
                                                         className: "mr-2"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 907,
+                                                        lineNumber: 947,
                                                         columnNumber: 23
                                                     }, this),
                                                     showAddModal ? 'Add Doctor' : 'Update Doctor'
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                lineNumber: 901,
+                                                lineNumber: 941,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                        lineNumber: 889,
+                                        lineNumber: 929,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 574,
+                                lineNumber: 614,
                                 columnNumber: 17
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                            lineNumber: 573,
+                            lineNumber: 613,
                             columnNumber: 15
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                        lineNumber: 567,
+                        lineNumber: 607,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 565,
+                    lineNumber: 605,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -2949,7 +3022,7 @@ const DoctorManagementDashboard = ()=>{
                                                             children: selectedDoctor.user?.name?.charAt(0) || 'D'
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 936,
+                                                            lineNumber: 976,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2960,7 +3033,7 @@ const DoctorManagementDashboard = ()=>{
                                                                     children: selectedDoctor.user?.name
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 940,
+                                                                    lineNumber: 980,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2972,19 +3045,19 @@ const DoctorManagementDashboard = ()=>{
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 941,
+                                                                    lineNumber: 981,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 939,
+                                                            lineNumber: 979,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 935,
+                                                    lineNumber: 975,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2994,18 +3067,18 @@ const DoctorManagementDashboard = ()=>{
                                                         size: 24
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                        lineNumber: 948,
+                                                        lineNumber: 988,
                                                         columnNumber: 25
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 944,
+                                                    lineNumber: 984,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                            lineNumber: 934,
+                                            lineNumber: 974,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3028,7 +3101,7 @@ const DoctorManagementDashboard = ()=>{
                                                             children: day.slice(0, 3)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 957,
+                                                            lineNumber: 997,
                                                             columnNumber: 29
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3044,25 +3117,25 @@ const DoctorManagementDashboard = ()=>{
                                                                     children: timeSlot
                                                                 }, i, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 973,
+                                                                    lineNumber: 1013,
                                                                     columnNumber: 35
                                                                 }, this);
                                                             })
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 962,
+                                                            lineNumber: 1002,
                                                             columnNumber: 29
                                                         }, this)
                                                     ]
                                                 }, day, true, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 956,
+                                                    lineNumber: 996,
                                                     columnNumber: 27
                                                 }, this);
                                             })
                                         }, void 0, false, {
                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                            lineNumber: 952,
+                                            lineNumber: 992,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3078,7 +3151,7 @@ const DoctorManagementDashboard = ()=>{
                                                                     className: "h-4 w-4 bg-green-100 border border-green-200 rounded mr-2"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 996,
+                                                                    lineNumber: 1036,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3086,13 +3159,13 @@ const DoctorManagementDashboard = ()=>{
                                                                     children: "Available"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 997,
+                                                                    lineNumber: 1037,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 995,
+                                                            lineNumber: 1035,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3102,7 +3175,7 @@ const DoctorManagementDashboard = ()=>{
                                                                     className: "h-4 w-4 bg-orange-100 border border-orange-200 rounded mr-2"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 1000,
+                                                                    lineNumber: 1040,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3110,13 +3183,13 @@ const DoctorManagementDashboard = ()=>{
                                                                     children: "Booked"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 1001,
+                                                                    lineNumber: 1041,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 999,
+                                                            lineNumber: 1039,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3126,7 +3199,7 @@ const DoctorManagementDashboard = ()=>{
                                                                     className: "h-4 w-4 bg-gray-50 border border-gray-200 rounded mr-2"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 1004,
+                                                                    lineNumber: 1044,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3134,19 +3207,19 @@ const DoctorManagementDashboard = ()=>{
                                                                     children: "Unavailable"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                                    lineNumber: 1005,
+                                                                    lineNumber: 1045,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 1003,
+                                                            lineNumber: 1043,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 994,
+                                                    lineNumber: 1034,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["motion"].button, {
@@ -3163,57 +3236,57 @@ const DoctorManagementDashboard = ()=>{
                                                             className: "mr-2"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                            lineNumber: 1013,
+                                                            lineNumber: 1053,
                                                             columnNumber: 25
                                                         }, this),
                                                         "Save Schedule"
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                                    lineNumber: 1008,
+                                                    lineNumber: 1048,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                            lineNumber: 993,
+                                            lineNumber: 1033,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                    lineNumber: 933,
+                                    lineNumber: 973,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                                lineNumber: 927,
+                                lineNumber: 967,
                                 columnNumber: 17
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                            lineNumber: 926,
+                            lineNumber: 966,
                             columnNumber: 15
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                        lineNumber: 920,
+                        lineNumber: 960,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/DoctorManagementDashboard.tsx",
-                    lineNumber: 918,
+                    lineNumber: 958,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/DoctorManagementDashboard.tsx",
-            lineNumber: 287,
+            lineNumber: 327,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/DoctorManagementDashboard.tsx",
-        lineNumber: 286,
+        lineNumber: 326,
         columnNumber: 5
     }, this);
 };
