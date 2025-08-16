@@ -814,40 +814,74 @@ export async function getAvailableSlots(
       throw new Error(`Failed to fetch existing appointments: ${appointmentsError.message}`);
     }
 
-    // Generate time slots based on doctor's working hours
+    // Generate time slots based on doctor's session-based availability
     const slots: AppointmentSlot[] = [];
-    const workingStartHour = parseInt(doctor.working_hours_start.split(':')[0]);
-    const workingEndHour = parseInt(doctor.working_hours_end.split(':')[0]);
-    const slotDuration = 30; // 30 minutes per slot
-
-    for (let hour = workingStartHour; hour < workingEndHour; hour++) {
-      for (let minute = 0; minute < 60; minute += slotDuration) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Check if slot is available
-        const isBooked = existingAppointments?.some(apt => {
-          const aptTime = apt.appointment_time;
-          const aptDuration = apt.duration_minutes || 30;
-          const aptEndTime = new Date(`2000-01-01T${aptTime}`);
-          aptEndTime.setMinutes(aptEndTime.getMinutes() + aptDuration);
-          
-          const slotTime = new Date(`2000-01-01T${timeString}`);
-          const slotEndTime = new Date(slotTime);
-          slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
-          
-          return (slotTime < aptEndTime && slotEndTime > new Date(`2000-01-01T${aptTime}`));
-        });
-
-        slots.push({
-          date,
-          time: timeString,
-          available: !isBooked,
-          doctorId,
-          doctorName: doctor.user?.name || 'Unknown',
-          specialization: doctor.specialization
-        });
-      }
+    const availabilityHours = doctor.availability_hours;
+    
+    if (!availabilityHours || !availabilityHours.sessions || !availabilityHours.availableSessions) {
+      console.warn('Doctor has no session-based availability configured');
+      return slots;
     }
+
+    // Check if doctor is available on the requested day
+    const requestedDay = new Date(date).getDay();
+    const workingDays = availabilityHours.workingDays || [];
+    if (!workingDays.includes(requestedDay)) {
+      return slots; // Doctor not available on this day
+    }
+
+    // Generate slots for each available session
+    const sessionTimes = {
+      morning: { start: '09:00', end: '12:00' },
+      afternoon: { start: '14:00', end: '17:00' },
+      evening: { start: '18:00', end: '21:00' }
+    };
+
+    availabilityHours.availableSessions.forEach((sessionName: string) => {
+      const session = availabilityHours.sessions[sessionName];
+      const sessionTime = sessionTimes[sessionName as keyof typeof sessionTimes];
+      
+      if (!session || !sessionTime) return;
+
+      const startHour = parseInt(session.startTime?.split(':')[0] || sessionTime.start.split(':')[0]);
+      const endHour = parseInt(session.endTime?.split(':')[0] || sessionTime.end.split(':')[0]);
+      const maxPatients = session.maxPatients || 8;
+      const slotDuration = 30; // 30 minutes per slot
+      const slotsPerSession = Math.floor((endHour - startHour) * 60 / slotDuration);
+      const maxSlotsForSession = Math.min(slotsPerSession, maxPatients);
+      
+      let slotsGenerated = 0;
+      for (let hour = startHour; hour < endHour && slotsGenerated < maxSlotsForSession; hour++) {
+        for (let minute = 0; minute < 60 && slotsGenerated < maxSlotsForSession; minute += slotDuration) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          
+          // Check if slot is available
+          const isBooked = existingAppointments?.some(apt => {
+            const aptTime = apt.appointment_time;
+            const aptDuration = apt.duration_minutes || 30;
+            const aptEndTime = new Date(`2000-01-01T${aptTime}`);
+            aptEndTime.setMinutes(aptEndTime.getMinutes() + aptDuration);
+            
+            const slotTime = new Date(`2000-01-01T${timeString}`);
+            const slotEndTime = new Date(slotTime);
+            slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
+            
+            return (slotTime < aptEndTime && slotEndTime > new Date(`2000-01-01T${aptTime}`));
+          });
+
+          slots.push({
+            date,
+            time: timeString,
+            available: !isBooked,
+            doctorId,
+            doctorName: doctor.user?.name || 'Unknown',
+            specialization: doctor.specialization
+          });
+          
+          slotsGenerated++;
+        }
+      }
+    });
 
     return slots;
   } catch (error) {

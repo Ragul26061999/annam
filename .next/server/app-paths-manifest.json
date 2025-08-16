@@ -1,19 +1,10 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/patients/[id]/route": "app/api/patients/[id]/route.js",
-  "/appointments/page": "app/appointments/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/doctor-management/page": "app/doctor-management/page.js",
   "/doctors/page": "app/doctors/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/patients/[id]/edit/page": "app/patients/[id]/edit/page.js",
-  "/patients/[id]/page": "app/patients/[id]/page.js",
-  "/patients/emergency-register/page": "app/patients/emergency-register/page.js",
-  "/patients/page": "app/patients/page.js",
-  "/patients/register/page": "app/patients/register/page.js",
-  "/pharmacy/page": "app/pharmacy/page.js",
-  "/staff/page": "app/staff/page.js",
-  "/workstation/page": "app/workstation/page.js"
+  "/patients/page": "app/patients/page.js"
 }

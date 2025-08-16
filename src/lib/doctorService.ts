@@ -169,21 +169,22 @@ export async function createDoctor(doctorData: DoctorRegistrationData): Promise<
     // Create doctor record
     const doctorRecord = {
       user_id: user.id,
-      doctor_id: doctorData.doctorId,
       license_number: doctorData.licenseNumber,
       specialization: doctorData.specialization,
-      department: doctorData.department,
       qualification: doctorData.qualification,
-      experience_years: doctorData.experienceYears,
+      years_of_experience: doctorData.experienceYears,
       consultation_fee: doctorData.consultationFee,
-      working_hours_start: doctorData.workingHoursStart,
-      working_hours_end: doctorData.workingHoursEnd,
-      working_days: doctorData.workingDays,
-      availability_hours: availabilityHours, // Store session-based data
       room_number: doctorData.roomNumber,
-      floor_number: doctorData.floorNumber,
-      availability_status: 'available',
-      emergency_available: doctorData.emergencyAvailable,
+      availability_hours: {
+        sessions: doctorData.sessions,
+        availableSessions: doctorData.availableSessions,
+        workingDays: doctorData.workingDays,
+        emergencyAvailable: doctorData.emergencyAvailable,
+        floorNumber: doctorData.floorNumber,
+        workingHoursStart: doctorData.workingHoursStart,
+        workingHoursEnd: doctorData.workingHoursEnd,
+        department: doctorData.department
+      },
       status: 'active'
     };
 
@@ -452,7 +453,7 @@ export async function updateDoctorAvailability(
     const { data: doctor, error } = await supabase
       .from('doctors')
       .update({ status: availabilityStatus === 'available' ? 'active' : 'inactive' })
-      .eq('license_number', doctorId) // Use license_number instead of doctor_id
+      .eq('id', doctorId) // Use id instead of license_number
       .select(`
         *,
         user:users(id, name, email, phone, address)
@@ -727,22 +728,88 @@ export async function updateDoctor(
   updates: Partial<DoctorRegistrationData>
 ): Promise<Doctor> {
   try {
-    const { data: doctor, error } = await supabase
+    // First, get the doctor to find the user_id
+    const { data: existingDoctor, error: fetchError } = await supabase
       .from('doctors')
-      .update(updates)
-      .eq('doctor_id', doctorId)
+      .select('user_id')
+      .eq('id', doctorId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching doctor:', fetchError);
+      throw new Error(`Failed to fetch doctor: ${fetchError.message}`);
+    }
+
+    // Separate user fields from doctor fields
+    const userFields = {
+      ...(updates.name && { name: updates.name }),
+      ...(updates.email && { email: updates.email }),
+      ...(updates.phone && { phone: updates.phone }),
+      ...(updates.address && { address: updates.address })
+    };
+
+    const doctorFields = {
+        ...(updates.licenseNumber && { license_number: updates.licenseNumber }),
+        ...(updates.specialization && { specialization: updates.specialization }),
+        ...(updates.qualification && { qualification: updates.qualification }),
+        ...(updates.experienceYears && { years_of_experience: updates.experienceYears }),
+        ...(updates.consultationFee && { consultation_fee: updates.consultationFee }),
+        ...(updates.roomNumber && { room_number: updates.roomNumber }),
+        ...((updates.sessions || updates.availableSessions || updates.workingDays || updates.emergencyAvailable !== undefined) && { 
+          availability_hours: {
+            sessions: updates.sessions,
+            availableSessions: updates.availableSessions,
+            workingDays: updates.workingDays,
+            emergencyAvailable: updates.emergencyAvailable,
+            ...(updates.floorNumber && { floorNumber: updates.floorNumber }),
+            ...(updates.workingHoursStart && { workingHoursStart: updates.workingHoursStart }),
+            ...(updates.workingHoursEnd && { workingHoursEnd: updates.workingHoursEnd })
+          }
+        })
+      };
+
+    // Update user fields if any exist
+    if (Object.keys(userFields).length > 0) {
+      const { error: userError } = await supabase
+        .from('users')
+        .update(userFields)
+        .eq('id', existingDoctor.user_id);
+
+      if (userError) {
+        console.error('Error updating user:', userError);
+        throw new Error(`Failed to update user: ${userError.message}`);
+      }
+    }
+
+    // Update doctor fields if any exist
+    if (Object.keys(doctorFields).length > 0) {
+      const { error: doctorError } = await supabase
+        .from('doctors')
+        .update(doctorFields)
+        .eq('id', doctorId);
+
+      if (doctorError) {
+        console.error('Error updating doctor:', doctorError);
+        throw new Error(`Failed to update doctor: ${doctorError.message}`);
+      }
+    }
+
+    // Fetch and return the updated doctor with user data
+    const { data: updatedDoctor, error: selectError } = await supabase
+      .from('doctors')
       .select(`
         *,
         user:users(id, name, email, phone, address)
       `)
+      .eq('id', doctorId)
       .single();
 
-    if (error) {
-      console.error('Error updating doctor:', error);
-      throw new Error(`Failed to update doctor: ${error.message}`);
+    if (selectError) {
+      console.error('Error fetching updated doctor:', selectError);
+      throw new Error(`Failed to fetch updated doctor: ${selectError.message}`);
     }
 
-    return doctor;
+    return updatedDoctor;
   } catch (error) {
     console.error('Error updating doctor:', error);
     throw error;
