@@ -2,12 +2,10 @@ import React from 'react';
 import { 
   Users, 
   Calendar, 
-  Pill, 
   Bed, 
   ArrowUpRight, 
   TrendingUp, 
   Heart, 
-  Activity,
   Clock,
   UserCheck,
   AlertCircle,
@@ -110,7 +108,7 @@ export default function Dashboard() {
         {/* Upcoming Appointments */}
         <div className="xl:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-5">
-            <h2 className="text-lg font-bold text-gray-900">Today's Appointments</h2>
+            <h2 className="text-lg font-bold text-gray-900">Today&apos;s Appointments</h2>
             <button className="flex items-center text-orange-600 hover:text-orange-700 font-medium text-sm bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-xl transition-all duration-200">
               View all <ArrowUpRight size={14} className="ml-1" />
             </button>
@@ -234,4 +232,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-} 
+}

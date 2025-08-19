@@ -7,10 +7,7 @@ import {
   Eye, 
   UserPlus, 
   UserMinus, 
-  MapPin,
   CheckCircle,
-  AlertCircle,
-  Clock,
   TrendingUp,
   Users,
   Building,
@@ -424,4 +421,4 @@ export default function BedsPage() {
       </div>
     </div>
   );
-} 
+}

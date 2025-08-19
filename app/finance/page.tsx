@@ -13,12 +13,7 @@ import {
   BarChart3,
   Calendar,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  MoreVertical,
   Download,
-  Users,
   Building
 } from 'lucide-react';
 
@@ -375,4 +370,4 @@ export default function FinancePage() {
       </div>
     </div>
   );
-} 
+}

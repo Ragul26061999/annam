@@ -5,28 +5,19 @@ import {
   Search, 
   Filter, 
   Plus, 
-  Eye, 
   Calendar, 
-  Phone, 
   MapPin,
   Users,
   Clock,
-  Star,
   TrendingUp,
   Award,
   Activity,
   CheckCircle,
   MoreVertical,
-  Edit,
-  Trash2,
-  Mail,
-  Building,
-  User,
-  Save,
-  X
+  Edit
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getAllDoctorsSimple, createDoctor, updateDoctor, getAllSpecializations, getAllDepartments, getDoctorStats, type Doctor, type DoctorRegistrationData } from '../../src/lib/doctorService';
+import { motion } from 'framer-motion';
+import { getAllDoctorsSimple, createDoctor, updateDoctor, getAllSpecializations, getAllDepartments, type Doctor, type DoctorRegistrationData } from '../../src/lib/doctorService';
 import { supabase } from '../../src/lib/supabase';
 import DoctorForm, { DoctorFormData } from '@/components/DoctorForm';
 
@@ -189,7 +180,7 @@ const getAvailabilityStatus = (doctor: Doctor) => {
     }
     
     return { status: 'No schedule', color: 'bg-gray-100 text-gray-700' };
-  } catch (error) {
+  } catch {
     return { status: 'Check schedule', color: 'bg-yellow-100 text-yellow-700' };
   }
 };
@@ -215,7 +206,7 @@ const getSessionTimings = (doctor: Doctor) => {
       }
       return null;
     }).filter(Boolean);
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -627,7 +618,7 @@ export default function DoctorsPage() {
                   {getSessionTimings(doctor).length > 0 && (
                     <div className="text-xs text-gray-600">
                       <p className="font-medium mb-1">Sessions:</p>
-                      {getSessionTimings(doctor).map((session: any, index: number) => (
+                      {getSessionTimings(doctor).map((session: { name: string; time: string; maxPatients: number }, index: number) => (
                         <div key={index} className="flex justify-between items-center">
                           <span>{session.name}: {session.time}</span>
                           <span className="text-gray-500">({session.maxPatients} max)</span>

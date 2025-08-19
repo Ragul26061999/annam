@@ -69,7 +69,7 @@ export async function PATCH(
     }
 
     // Map frontend fields to database fields
-    const mappedData: any = {};
+    const mappedData: Record<string, string | undefined> = {};
     
     // Combine firstName and lastName into name field
     if (updateData.firstName || updateData.lastName) {

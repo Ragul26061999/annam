@@ -40,12 +40,11 @@ const AppointmentDashboard: React.FC = () => {
   ];
 
   const TabButton: React.FC<{ 
-    id: 'overview' | 'book' | 'manage'; 
     label: string; 
     icon: React.ElementType;
     isActive: boolean;
     onClick: () => void;
-  }> = ({ id, label, icon: Icon, isActive, onClick }) => (
+  }> = ({ label, icon: Icon, isActive, onClick }) => (
     <button
       onClick={onClick}
       className={`flex items-center px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
@@ -81,21 +80,18 @@ const AppointmentDashboard: React.FC = () => {
           {/* Navigation Tabs */}
           <div className="flex space-x-2 pb-4">
             <TabButton
-              id="overview"
               label="Overview"
               icon={Activity}
               isActive={activeTab === 'overview'}
               onClick={() => setActiveTab('overview')}
             />
             <TabButton
-              id="book"
               label="Book Appointment"
               icon={Plus}
               isActive={activeTab === 'book'}
               onClick={() => setActiveTab('book')}
             />
             <TabButton
-              id="manage"
               label="Manage Appointments"
               icon={Filter}
               isActive={activeTab === 'manage'}

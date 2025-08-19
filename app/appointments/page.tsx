@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
   Search, 
@@ -7,27 +7,143 @@ import {
   Plus, 
   Eye, 
   Clock, 
-  User, 
+  User,
   MapPin,
   CheckCircle,
   XCircle,
   AlertCircle,
   TrendingUp,
-  Users,
-  CalendarDays,
   MoreVertical,
   Phone,
-  Stethoscope
+  Stethoscope,
+  Loader2,
+  Hash
 } from 'lucide-react';
-import AppointmentBookingModal from '../../src/components/AppointmentBookingModal';
+import ModernAppointmentBooking from '../../components/ModernAppointmentBooking';
+import { getAppointments, updateAppointmentStatus, getAppointmentStats, type Appointment } from '../../src/lib/appointmentService';
+
+interface AppointmentStats {
+  total: number;
+  scheduled: number;
+  completed: number;
+  cancelled: number;
+  todayCount: number;
+  upcomingCount: number;
+}
 
 export default function AppointmentsPage() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [stats, setStats] = useState<AppointmentStats>({
+    total: 0,
+    scheduled: 0,
+    completed: 0,
+    cancelled: 0,
+    todayCount: 0,
+    upcomingCount: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
-  const handleAppointmentSuccess = (appointment: any) => {
+  const handleAppointmentSuccess = (appointment: Appointment) => {
     console.log('Appointment created:', appointment);
-    // Refresh appointments list or update state
+    fetchAppointments();
     setIsBookingModalOpen(false);
+  };
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAppointments({
+        date: selectedDate,
+        searchTerm: searchTerm || undefined,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        limit: 50
+      });
+      setAppointments(response.appointments);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setError('Failed to load appointments. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const statsData = await getAppointmentStats();
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // Don't show error for stats as it's not critical
+    }
+  };
+
+  const handleStatusUpdate = async (appointmentId: string, newStatus: 'completed' | 'cancelled') => {
+    try {
+      setUpdatingStatus(appointmentId);
+      await updateAppointmentStatus(appointmentId, newStatus);
+      await fetchAppointments();
+      await fetchStats();
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      setError(`Failed to update appointment status. Please try again.`);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const extractTokenNumber = (notes: string | null): string => {
+    if (!notes) return 'N/A';
+    const match = notes.match(/Token:\s*(\d+)/);
+    return match ? match[1] : 'N/A';
+  };
+
+  const isWithinAppointmentSession = (appointmentDate: string, appointmentTime: string): boolean => {
+    const now = new Date();
+    const appointmentDateTime = new Date(`${appointmentDate}T${appointmentTime}`);
+    
+    // Check if it's the same date
+    const isSameDate = now.toDateString() === appointmentDateTime.toDateString();
+    
+    if (!isSameDate) return false;
+    
+    // Allow completion 15 minutes before and 30 minutes after appointment time
+    const timeDiff = now.getTime() - appointmentDateTime.getTime();
+    const fifteenMinutes = 15 * 60 * 1000;
+    const thirtyMinutes = 30 * 60 * 1000;
+    
+    return timeDiff >= -fifteenMinutes && timeDiff <= thirtyMinutes;
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+    fetchStats();
+  }, [selectedDate, searchTerm, statusFilter]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTimeColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'from-green-500 to-green-600';
+      case 'cancelled': return 'from-red-500 to-red-600';
+      case 'in_progress': return 'from-yellow-500 to-yellow-600';
+      default: return 'from-blue-500 to-blue-600';
+    }
   };
 
   return (
@@ -53,10 +169,10 @@ export default function AppointmentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Today's Appointments</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">42</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.todayCount}</p>
               <div className="flex items-center mt-2">
                 <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">+8 from yesterday</span>
+                <span className="text-sm font-medium text-green-600">Total: {stats.total}</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
@@ -69,10 +185,12 @@ export default function AppointmentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Completed</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">28</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.completed}</p>
               <div className="flex items-center mt-2">
                 <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">67% success rate</span>
+                <span className="text-sm font-medium text-green-600">
+                  {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% success rate
+                </span>
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
@@ -84,11 +202,11 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Pending</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Scheduled</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.scheduled}</p>
               <div className="flex items-center mt-2">
                 <Clock className="h-3 w-3 text-orange-500 mr-1" />
-                <span className="text-sm font-medium text-orange-600">Next at 10:30 AM</span>
+                <span className="text-sm font-medium text-orange-600">Upcoming: {stats.upcomingCount}</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl flex items-center justify-center">
@@ -101,10 +219,12 @@ export default function AppointmentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cancelled</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">2</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.cancelled}</p>
               <div className="flex items-center mt-2">
                 <XCircle className="h-3 w-3 text-red-500 mr-1" />
-                <span className="text-sm font-medium text-red-600">5% cancellation</span>
+                <span className="text-sm font-medium text-red-600">
+                  {stats.total > 0 ? Math.round((stats.cancelled / stats.total) * 100) : 0}% cancellation
+                </span>
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
@@ -124,200 +244,167 @@ export default function AppointmentsPage() {
             <input
               type="text"
               placeholder="Search appointments by patient name, doctor, or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <Filter size={16} className="mr-2" />
-              Filter
-            </button>
-            <select className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-              <option>All Status</option>
-              <option>Scheduled</option>
-              <option>Completed</option>
-              <option>Cancelled</option>
-              <option>No Show</option>
-            </select>
-            <select className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-              <option>Today</option>
-              <option>This Week</option>
-              <option>This Month</option>
-              <option>Custom Range</option>
+            <div className="flex items-center px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white">
+              <Calendar size={16} className="mr-2" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent focus:outline-none"
+              />
+            </div>
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="all">All Status</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="in_progress">In Progress</option>
             </select>
           </div>
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+            <div>
+              <p className="text-red-800 font-medium">Error</p>
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              <XCircle className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Appointments List */}
-      <div className="space-y-4">
-        {/* Appointment Card 1 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                10:00
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Yogitha S</h3>
-                <p className="text-sm text-gray-500">AH25075452 • Cardiology Consultation</p>
-                <div className="flex items-center mt-1 space-x-4">
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Stethoscope size={12} className="mr-1" />
-                    Dr. Priya Sharma
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <MapPin size={12} className="mr-1" />
-                    ROOM001
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Phone size={12} className="mr-1" />
-                    9988778899
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="p-5 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">Appointments</h2>
+          <p className="text-sm text-gray-600 mt-1">Manage and track patient appointments</p>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <span className="ml-2 text-gray-600">Loading appointments...</span>
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="text-center py-12">
+            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">No appointments found for the selected criteria.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {appointments.map((appointment) => {
+              const tokenNumber = extractTokenNumber(appointment.notes || null);
+              const patientName = appointment.patient?.name || 'Unknown Patient';
+              const doctorName = appointment.doctor?.user?.name || 'Unknown Doctor';
+              const patientInitials = patientName
+                .split(' ')
+                .map((name: string) => name.charAt(0))
+                .join('')
+                .toUpperCase();
+              
+              return (
+                <div key={appointment.id} className="p-5 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 bg-gradient-to-r ${getTimeColor(appointment.status)} rounded-xl flex items-center justify-center`}>
+                        <span className="text-white font-semibold text-sm">{patientInitials}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <h3 className="font-semibold text-gray-900">{patientName}</h3>
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
+                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                          </span>
+                          {tokenNumber !== 'N/A' && (
+                            <span className="flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                              <Hash size={12} className="mr-1" />
+                              {tokenNumber}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-4 mt-1 flex-wrap">
+                          <span className="text-sm text-gray-600 flex items-center">
+                            <Clock size={14} className="mr-1" />
+                            {new Date(appointment.appointment_date).toLocaleDateString()} • {appointment.appointment_time}
+                          </span>
+                          <span className="text-sm text-gray-600 flex items-center">
+                            <User size={14} className="mr-1" />
+                            {doctorName}
+                          </span>
+                          {appointment.chief_complaint && (
+                            <span className="text-sm text-gray-600 flex items-center">
+                              <span className="mr-1">•</span>
+                              {appointment.chief_complaint}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {appointment.status === 'scheduled' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusUpdate(appointment.id, 'completed')}
+                            disabled={updatingStatus === appointment.id || !isWithinAppointmentSession(appointment.appointment_date, appointment.appointment_time)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                              isWithinAppointmentSession(appointment.appointment_date, appointment.appointment_time)
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            } disabled:opacity-50`}
+                            title={!isWithinAppointmentSession(appointment.appointment_date, appointment.appointment_time) 
+                              ? 'Complete button is only active during appointment session (15 min before to 30 min after)' 
+                              : 'Mark appointment as completed'}
+                          >
+                            {updatingStatus === appointment.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              'Complete'
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
+                            disabled={updatingStatus === appointment.id}
+                            className="px-3 py-1.5 bg-red-100 text-red-700 text-xs font-medium rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                          >
+                            {updatingStatus === appointment.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              'Cancel'
+                            )}
+                          </button>
+                        </>
+                      )}
+                      <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                        <MoreVertical size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                Scheduled
-              </span>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                  <Eye size={16} />
-                </button>
-                <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            </div>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Appointment Card 2 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                09:30
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">James Wilson</h3>
-                <p className="text-sm text-gray-500">PAT002 • Emergency Medicine Consultation</p>
-                <div className="flex items-center mt-1 space-x-4">
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Stethoscope size={12} className="mr-1" />
-                    Dr. Amit Singh
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <MapPin size={12} className="mr-1" />
-                    ROOM004
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Phone size={12} className="mr-1" />
-                    +1-555-123-4567
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                Completed
-              </span>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                  <Eye size={16} />
-                </button>
-                <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Appointment Card 3 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                14:15
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Olivia Martinez</h3>
-                <p className="text-sm text-gray-500">PAT003 • Pediatric Consultation</p>
-                <div className="flex items-center mt-1 space-x-4">
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Stethoscope size={12} className="mr-1" />
-                    Dr. Rajesh Kumar
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <MapPin size={12} className="mr-1" />
-                    ROOM002
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Phone size={12} className="mr-1" />
-                    +1-555-987-6543
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                Scheduled
-              </span>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                  <Eye size={16} />
-                </button>
-                <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Appointment Card 4 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-600 to-red-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                11:45
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Noah Parker</h3>
-                <p className="text-sm text-gray-500">PAT004 • Orthopedic Consultation</p>
-                <div className="flex items-center mt-1 space-x-4">
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Stethoscope size={12} className="mr-1" />
-                    Dr. Sunita Patel
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <MapPin size={12} className="mr-1" />
-                    ROOM003
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600">
-                    <Phone size={12} className="mr-1" />
-                    +1-555-234-5678
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                Cancelled
-              </span>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                  <Eye size={16} />
-                </button>
-                <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Load More */}
@@ -327,12 +414,16 @@ export default function AppointmentsPage() {
         </button>
       </div>
 
-      {/* Appointment Booking Modal */}
-      <AppointmentBookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        onSuccess={handleAppointmentSuccess}
-      />
+      {/* Modern Appointment Booking */}
+      {isBookingModalOpen && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <ModernAppointmentBooking
+             isOpen={true}
+             onClose={() => setIsBookingModalOpen(false)}
+             onSuccess={handleAppointmentSuccess}
+           />
+        </div>
+      )}
     </div>
   );
 }

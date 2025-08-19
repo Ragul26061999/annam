@@ -7,14 +7,10 @@ import {
   Plus, 
   Eye, 
   Clock, 
-  User, 
   MapPin,
   CheckCircle,
   XCircle,
-  AlertCircle,
   TrendingUp,
-  Users,
-  CalendarDays,
   MoreVertical,
   Phone,
   Stethoscope
@@ -40,7 +36,7 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Today's Appointments</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Today&apos;s Appointments</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">42</p>
               <div className="flex items-center mt-2">
                 <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
@@ -316,4 +312,4 @@ export default function AppointmentsPage() {
       </div>
     </div>
   );
-} 
+}
