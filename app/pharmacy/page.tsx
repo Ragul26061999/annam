@@ -1,377 +1,649 @@
-import React from 'react';
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { 
-  Pill, 
   Search, 
-  Filter, 
   Plus, 
-  Eye, 
-  AlertTriangle, 
   Package, 
-  ShoppingCart,
-  TrendingUp,
-  TrendingDown,
+  AlertTriangle, 
+  ShoppingCart, 
   DollarSign,
-  Calendar,
-  MoreVertical,
-  Clock,
-  CheckCircle,
-  XCircle
-} from 'lucide-react';
+  IndianRupee,
+  Filter,
+  Eye,
+  Edit,
+  Trash2,
+  FileText,
+  Users,
+  Receipt,
+  BarChart3
+} from 'lucide-react'
+import { 
+  getPharmacyDashboardStats, 
+  getMedications, 
+  getPharmacyBills 
+} from '@/src/lib/pharmacyService'
+
+interface Medicine {
+  id: string
+  medicine_code?: string
+  name: string
+  category: string
+  stock_quantity: number
+  unit_price: number
+  expiry_date?: string
+  manufacturer: string
+  batch_number: string
+  minimum_stock_level: number
+}
+
+interface PharmacyBill {
+  id: string
+  bill_number: string
+  patient_id: string
+  total_amount: number
+  payment_status: string
+  created_at: string
+}
+
+interface DashboardStats {
+  totalMedications: number
+  lowStockCount: number
+  todaysSales: number
+  pendingOrders: number
+}
 
 export default function PharmacyPage() {
+  const [medicines, setMedicines] = useState<Medicine[]>([])
+  const [bills, setBills] = useState<PharmacyBill[]>([])
+  const [stats, setStats] = useState<DashboardStats>({
+    totalMedications: 0,
+    lowStockCount: 0,
+    todaysSales: 0,
+    pendingOrders: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [activeTab, setActiveTab] = useState('dashboard')
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [dashboardData, medicinesData, billsData] = await Promise.all([
+        getPharmacyDashboardStats(),
+        getMedications(),
+        getPharmacyBills()
+      ])
+
+      // Map dashboard data to match our interface
+       setStats({
+         totalMedications: dashboardData.totalMedications || 0,
+         lowStockCount: dashboardData.lowStockCount || 0,
+         todaysSales: dashboardData.todaySales || 0,
+         pendingOrders: dashboardData.pendingBills || 0
+       })
+      
+      // Map medicines data
+      const mappedMedicines = medicinesData.map((med: any) => ({
+        id: med.id,
+        medicine_code: med.medicine_code,
+        name: med.name,
+        category: med.category,
+        stock_quantity: med.stock_quantity,
+        unit_price: med.unit_price,
+        expiry_date: med.expiry_date,
+        manufacturer: med.manufacturer,
+        batch_number: med.batch_number,
+        minimum_stock_level: med.minimum_stock_level
+      }))
+      setMedicines(mappedMedicines)
+      
+      // Map bills data
+      const mappedBills = billsData.map((bill: any) => ({
+        id: bill.id,
+        bill_number: bill.bill_number,
+        patient_id: bill.patient_id,
+        total_amount: bill.total_amount,
+        payment_status: bill.payment_status,
+        created_at: bill.created_at
+      }))
+      // Store all bills; we'll limit to 5 only in the dashboard "Recent Bills" view
+      setBills(mappedBills)
+    } catch (err) {
+      setError('Failed to load pharmacy data')
+      console.error('Error loading pharmacy data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredMedicines = medicines.filter(medicine => {
+    const matchesSearch = medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         medicine.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (medicine.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (medicine.batch_number?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (medicine.medicine_code?.toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchesCategory = categoryFilter === 'all' || medicine.category === categoryFilter
+    return matchesSearch && matchesCategory
+  }).slice(0, 6) // Show only first 6 medicines
+
+  const categories = Array.from(new Set(medicines.map(m => m.category)))
+
+  const getStockStatus = (medicine: Medicine) => {
+    if (medicine.stock_quantity <= medicine.minimum_stock_level) {
+      return { status: 'Low Stock', variant: 'destructive' as const }
+    } else if (medicine.stock_quantity <= medicine.minimum_stock_level * 2) {
+      return { status: 'Medium Stock', variant: 'secondary' as const }
+    }
+    return { status: 'In Stock', variant: 'default' as const }
+  }
+
+  const getBadgeClass = (variant: string) => {
+    switch (variant) {
+      case 'destructive':
+        return 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium'
+      case 'secondary':
+        return 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium'
+      default:
+        return 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading pharmacy data...</div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pharmacy</h1>
-          <p className="text-gray-500 mt-1">Manage medicine inventory and prescriptions</p>
+          <h1 className="text-3xl font-bold text-gray-900">Pharmacy Management</h1>
+          <p className="text-gray-600 mt-1">Manage medicines, inventory, and billing</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
-            <Package size={16} className="mr-2" />
-            Add Stock
+          <Link href="/pharmacy/newbilling" className="btn-primary flex items-center">
+            <Receipt className="w-4 h-4 mr-2" />
+            New Billing
+          </Link>
+          <button className="btn-primary flex items-center">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Medicine
           </button>
-          <button className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
-            <Plus size={16} className="mr-2" />
-            New Medicine
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'dashboard'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 inline mr-2" />
+            Dashboard
           </button>
-        </div>
+          <button
+            onClick={() => setActiveTab('prescribed')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'prescribed'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <FileText className="w-4 h-4 inline mr-2" />
+            Prescribed List
+          </button>
+          <button
+            onClick={() => setActiveTab('newbilling')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'newbilling'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Receipt className="w-4 h-4 inline mr-2" />
+            New Billing
+          </button>
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'inventory'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Package className="w-4 h-4 inline mr-2" />
+            Inventory
+          </button>
+          <button
+            onClick={() => setActiveTab('billing')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'billing'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <IndianRupee className="w-4 h-4 inline mr-2" />
+            Billing History
+          </button>
+        </nav>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Medicines</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">1,247</p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">+23 new this week</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-              <Pill className="text-white" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Low Stock</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">18</p>
-              <div className="flex items-center mt-2">
-                <AlertTriangle className="h-3 w-3 text-orange-500 mr-1" />
-                <span className="text-sm font-medium text-orange-600">Requires reorder</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="text-white" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Sales Today</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">₹45,200</p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">+12% from yesterday</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-              <DollarSign className="text-white" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Prescriptions</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">124</p>
-              <div className="flex items-center mt-2">
-                <ShoppingCart className="h-3 w-3 text-blue-500 mr-1" />
-                <span className="text-sm font-medium text-blue-600">32 pending</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <ShoppingCart className="text-white" size={20} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search medicines by name, category, or manufacturer..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="flex items-center px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <Filter size={16} className="mr-2" />
-              Filter
-            </button>
-            <select className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-              <option>All Categories</option>
-              <option>Antibiotics</option>
-              <option>Pain Relief</option>
-              <option>Vitamins</option>
-              <option>Cardiac</option>
-              <option>Diabetes</option>
-            </select>
-            <select className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-              <option>All Stock</option>
-              <option>In Stock</option>
-              <option>Low Stock</option>
-              <option>Out of Stock</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Medicine Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Medicine Card 1 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                P
-              </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">Paracetamol</h3>
-                <p className="text-sm text-gray-500">MED001 • Pain Relief</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                In Stock
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Stock Quantity:</span>
-              <span className="font-medium text-gray-900">1,250 tablets</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Unit Price:</span>
-              <span className="font-medium text-gray-900">₹2.50</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Manufacturer:</span>
-              <span className="font-medium text-gray-900">Cipla Ltd</span>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 rounded-xl p-3 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-blue-700">Expiry Date</p>
-              <span className="text-xs text-blue-600">12 months left</span>
-            </div>
-            <p className="text-sm text-blue-900">Dec 2025</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-gray-50 text-gray-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">
-              <Package size={14} className="mr-1" />
-              Restock
-            </button>
-          </div>
-        </div>
-
-        {/* Medicine Card 2 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                A
-              </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">Amoxicillin</h3>
-                <p className="text-sm text-gray-500">MED002 • Antibiotic</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
-                Low Stock
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Stock Quantity:</span>
-              <span className="font-medium text-orange-600">45 capsules</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Unit Price:</span>
-              <span className="font-medium text-gray-900">₹8.75</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Manufacturer:</span>
-              <span className="font-medium text-gray-900">Sun Pharma</span>
-            </div>
-          </div>
-
-          <div className="bg-orange-50 rounded-xl p-3 mb-4 border border-orange-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-orange-700">Expiry Date</p>
-              <span className="text-xs text-orange-600">8 months left</span>
-            </div>
-            <p className="text-sm text-orange-900">Aug 2025</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-orange-100 text-orange-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-200 transition-colors">
-              <Package size={14} className="mr-1" />
-              Urgent
-            </button>
-          </div>
-        </div>
-
-        {/* Medicine Card 3 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                V
-              </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">Vitamin D3</h3>
-                <p className="text-sm text-gray-500">MED003 • Vitamin</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                In Stock
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Stock Quantity:</span>
-              <span className="font-medium text-gray-900">800 tablets</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Unit Price:</span>
-              <span className="font-medium text-gray-900">₹12.00</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Manufacturer:</span>
-              <span className="font-medium text-gray-900">Abbott</span>
-            </div>
-          </div>
-
-          <div className="bg-purple-50 rounded-xl p-3 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-purple-700">Expiry Date</p>
-              <span className="text-xs text-purple-600">18 months left</span>
-            </div>
-            <p className="text-sm text-purple-900">Jun 2026</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-gray-50 text-gray-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">
-              <Package size={14} className="mr-1" />
-              Restock
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Prescriptions */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Prescriptions</h2>
-          <button className="text-sm text-orange-600 hover:text-orange-700 font-medium">View All</button>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                SJ
+      {/* Tab Content */}
+      {activeTab === 'dashboard' && (
+        <div className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card">
+              <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="text-sm font-medium">Total Medicines</h3>
+                <Package className="h-4 w-4 text-gray-500" />
               </div>
               <div>
-                <p className="font-medium text-gray-900">Sarah Johnson</p>
-                <p className="text-sm text-gray-500">3 medicines • Dr. Priya Sharma</p>
+                <div className="text-2xl font-bold">{stats.totalMedications}</div>
+                <p className="text-xs text-gray-500">Active inventory items</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                Pending
-              </span>
-              <button className="p-1 text-gray-500 hover:text-orange-600 rounded-lg transition-colors">
-                <Eye size={16} />
+
+            <div className="card">
+              <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="text-sm font-medium">Low Stock Items</h3>
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-orange-600">{stats.lowStockCount}</div>
+                <p className="text-xs text-gray-500">Need restocking</p>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="text-sm font-medium">Today's Sales</h3>
+                <IndianRupee className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">₹{stats.todaysSales.toLocaleString()}</div>
+                <p className="text-xs text-gray-500">Revenue today</p>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="text-sm font-medium">Pending Orders</h3>
+                <ShoppingCart className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-blue-600">{stats.pendingOrders}</div>
+                <p className="text-xs text-gray-500">Awaiting processing</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search medicines..."
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="input pl-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={categoryFilter}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryFilter(e.target.value)}
+                className="select"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <button className="btn-icon">
+                <Filter className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                MR
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Michael Rodriguez</p>
-                <p className="text-sm text-gray-500">2 medicines • Dr. Amit Singh</p>
-              </div>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+              {error}
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                Dispensed
-              </span>
-              <button className="p-1 text-gray-500 hover:text-orange-600 rounded-lg transition-colors">
-                <Eye size={16} />
+          )}
+
+          {/* Recent Medicines */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Recent Medicines</h2>
+              <button 
+                onClick={() => setActiveTab('inventory')}
+                className="btn-secondary text-sm"
+              >
+                View All
               </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMedicines.map((medicine) => {
+                const stockStatus = getStockStatus(medicine)
+                return (
+                  <div key={medicine.id} className="card hover:shadow-md transition-shadow">
+                    <div className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            {medicine.name}
+                            {medicine.medicine_code && (
+                              <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
+                                {medicine.medicine_code}
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-sm text-gray-600">{medicine.category}</p>
+                        </div>
+                        <span className={getBadgeClass(stockStatus.variant)}>
+                          {stockStatus.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Stock:</span>
+                          <span className="font-medium">{medicine.stock_quantity} units</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Price:</span>
+                          <span className="font-medium">₹{medicine.unit_price}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Batch:</span>
+                          <span className="font-medium">{medicine.batch_number}</span>
+                        </div>
+                        {medicine.expiry_date && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Expiry:</span>
+                            <span className="font-medium">
+                              {new Date(medicine.expiry_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        <button className="btn-secondary text-sm flex-1 flex items-center justify-center">
+                          <Eye className="w-3 h-3 mr-1" />
+                          View
+                        </button>
+                        <button className="btn-secondary text-sm flex-1 flex items-center justify-center">
+                          <Edit className="w-3 h-3 mr-1" />
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Recent Bills */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Recent Bills</h2>
+              <button 
+                onClick={() => setActiveTab('billing')}
+                className="btn-secondary text-sm"
+              >
+                View All
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bills.slice(0, 5).map((bill) => (
+                <div key={bill.id} className="card hover:shadow-md transition-shadow">
+                  <div className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold">#{bill.bill_number}</h3>
+                        <p className="text-sm text-gray-600">Patient ID: {bill.patient_id}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        bill.payment_status === 'paid' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {bill.payment_status}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Amount:</span>
+                        <span className="font-medium text-green-600">₹{bill.total_amount}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Date:</span>
+                        <span className="font-medium">
+                          {new Date(bill.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button onClick={() => setActiveTab('billing')} className="btn-secondary text-sm flex-1 flex items-center justify-center">
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Load More */}
-      <div className="flex justify-center">
-        <button className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors">
-          Load More Medicines
-        </button>
-      </div>
+      {activeTab === 'prescribed' && (
+        <div className="space-y-6">
+          <div className="text-center py-12">
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Prescribed List</h3>
+            <p className="text-gray-600">Manage patient prescriptions and medicine dispensing</p>
+            <p className="text-sm text-gray-500 mt-2">Coming soon...</p>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'newbilling' && (
+        <div className="space-y-6">
+          <div className="text-center py-12">
+            <Receipt className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">New Billing</h3>
+            <p className="text-gray-600">Create bills for existing patients or new customers</p>
+            <p className="text-sm text-gray-500 mt-2">Coming soon...</p>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'inventory' && (
+        <div className="space-y-6">
+          {/* Inventory Controls */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by name, category, manufacturer, or batch"
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="input pl-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={categoryFilter}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryFilter(e.target.value)}
+                className="select"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Inventory Table */}
+          <div className="card p-0 overflow-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {medicines
+                  .filter(m => {
+                    const term = searchTerm.toLowerCase()
+                    const matchesSearch =
+                      m.name.toLowerCase().includes(term) ||
+                      m.category.toLowerCase().includes(term) ||
+                      m.manufacturer.toLowerCase().includes(term) ||
+                      m.batch_number.toLowerCase().includes(term) ||
+                      (m.medicine_code ? m.medicine_code.toLowerCase().includes(term) : false)
+                    const matchesCategory = categoryFilter === 'all' || m.category === categoryFilter
+                    return matchesSearch && matchesCategory
+                  })
+                  .sort((a, b) => {
+                    const aDate = a.expiry_date ? new Date(a.expiry_date).getTime() : Number.MAX_SAFE_INTEGER
+                    const bDate = b.expiry_date ? new Date(b.expiry_date).getTime() : Number.MAX_SAFE_INTEGER
+                    return aDate - bDate
+                  })
+                  .map((m) => {
+                    const stockStatus = getStockStatus(m)
+                    return (
+                      <tr key={m.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 flex items-center gap-2">
+                          {m.name}
+                          <span className={getBadgeClass(stockStatus.variant)}>{stockStatus.status}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{m.medicine_code || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{m.category}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{m.manufacturer}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{m.batch_number}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{m.stock_quantity}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">₹{m.unit_price}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {m.expiry_date ? new Date(m.expiry_date).toLocaleDateString() : '-'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'billing' && (
+        <div className="space-y-6">
+          {/* Billing Controls */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by bill # or patient ID"
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="input pl-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={categoryFilter}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryFilter(e.target.value)}
+                className="select"
+              >
+                <option value="all">All Statuses</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+              </select>
+              <Link href="/pharmacy/newbilling" className="btn-primary flex items-center">
+                <Receipt className="w-4 h-4 mr-2" />
+                Create New Bill
+              </Link>
+            </div>
+          </div>
+
+          {/* Bills Table */}
+          <div className="card p-0 overflow-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {bills
+                  .filter(b => {
+                    const term = searchTerm.toLowerCase()
+                    const matchesSearch =
+                      b.bill_number.toLowerCase().includes(term) ||
+                      (b.patient_id ? String(b.patient_id).toLowerCase().includes(term) : false)
+                    const matchesStatus = categoryFilter === 'all' || b.payment_status === categoryFilter
+                    return matchesSearch && matchesStatus
+                  })
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((b) => (
+                    <tr key={b.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">#{b.bill_number}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{b.patient_id}</td>
+                      <td className="px-4 py-3 text-sm text-green-700">₹{b.total_amount}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          b.payment_status === 'paid'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {b.payment_status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{new Date(b.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
-  );
-} 
+  )
+}

@@ -587,3 +587,207 @@ export async function getAllPatients(
     throw error;
   }
 }
+
+/**
+ * Update patient admission status
+ * @param uhid - Patient's unique hospital ID
+ * @param isAdmitted - Whether the patient is admitted
+ * @returns Promise with updated patient data
+ */
+export async function updatePatientAdmissionStatus(
+  uhid: string,
+  isAdmitted: boolean
+): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .update({ 
+        is_admitted: isAdmitted,
+        updated_at: new Date().toISOString()
+      })
+      .eq('patient_id', uhid)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating patient admission status:', error);
+      throw new Error(`Failed to update admission status: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating patient admission status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update patient critical status
+ * @param uhid - Patient's unique hospital ID
+ * @param isCritical - Whether the patient is in critical condition
+ * @returns Promise with updated patient data
+ */
+export async function updatePatientCriticalStatus(
+  uhid: string,
+  isCritical: boolean
+): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .update({ 
+        is_critical: isCritical,
+        updated_at: new Date().toISOString()
+      })
+      .eq('patient_id', uhid)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating patient critical status:', error);
+      throw new Error(`Failed to update critical status: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating patient critical status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update both admission and critical status
+ * @param uhid - Patient's unique hospital ID
+ * @param isAdmitted - Whether the patient is admitted
+ * @param isCritical - Whether the patient is in critical condition
+ * @returns Promise with updated patient data
+ */
+export async function updatePatientStatus(
+  uhid: string,
+  isAdmitted?: boolean,
+  isCritical?: boolean
+): Promise<any> {
+  try {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (isAdmitted !== undefined) {
+      updateData.is_admitted = isAdmitted;
+    }
+
+    if (isCritical !== undefined) {
+      updateData.is_critical = isCritical;
+    }
+
+    const { data, error } = await supabase
+      .from('patients')
+      .update(updateData)
+      .eq('patient_id', uhid)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating patient status:', error);
+      throw new Error(`Failed to update patient status: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating patient status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get patients by admission status
+ * @param isAdmitted - Filter by admission status
+ * @param isCritical - Optional filter by critical status
+ * @returns Promise with filtered patients
+ */
+export async function getPatientsByStatus(
+  isAdmitted?: boolean,
+  isCritical?: boolean
+): Promise<any[]> {
+  try {
+    let query = supabase
+      .from('patients')
+      .select(`
+        *,
+        users:user_id (
+          id,
+          name,
+          email,
+          role,
+          status,
+          permissions
+        )
+      `);
+
+    if (isAdmitted !== undefined) {
+      query = query.eq('is_admitted', isAdmitted);
+    }
+
+    if (isCritical !== undefined) {
+      query = query.eq('is_critical', isCritical);
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching patients by status:', error);
+      throw new Error(`Failed to fetch patients: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching patients by status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get admitted patients count
+ * @returns Promise with count of admitted patients
+ */
+export async function getAdmittedPatientsCount(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('patients')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_admitted', true);
+
+    if (error) {
+      console.error('Error getting admitted patients count:', error);
+      throw new Error(`Failed to get count: ${error.message}`);
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting admitted patients count:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get critical patients count
+ * @returns Promise with count of critical patients
+ */
+export async function getCriticalPatientsCount(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('patients')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_critical', true);
+
+    if (error) {
+      console.error('Error getting critical patients count:', error);
+      throw new Error(`Failed to get count: ${error.message}`);
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting critical patients count:', error);
+    throw error;
+  }
+}

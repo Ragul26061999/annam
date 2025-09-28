@@ -26,7 +26,7 @@ interface PrescriptionFormProps {
 }
 
 interface MedicineFormData {
-  medicine_id: string;
+  medication_id: string;
   medicine_name: string;
   dosage: string;
   frequency: string;
@@ -44,7 +44,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
 }) => {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [prescriptionMedicines, setPrescriptionMedicines] = useState<MedicineFormData[]>([{
-    medicine_id: '',
+    medication_id: '',
     medicine_name: '',
     dosage: '',
     frequency: '',
@@ -100,7 +100,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
   // Add new medicine row
   const addMedicineRow = () => {
     setPrescriptionMedicines([...prescriptionMedicines, {
-      medicine_id: '',
+      medication_id: '',
       medicine_name: '',
       dosage: '',
       frequency: '',
@@ -120,7 +120,24 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
   // Update medicine in row
   const updateMedicine = (index: number, field: keyof MedicineFormData, value: string | number) => {
     const updated = [...prescriptionMedicines];
-    updated[index] = { ...updated[index], [field]: value };
+    if (field === 'quantity') {
+      updated[index][field] = Number(value);
+    } else {
+      updated[index][field] = value as string;
+    }
+    setPrescriptionMedicines(updated);
+  };
+
+  const updateMedicineFromSelect = (index: number, medicineId: string) => {
+    const updated = [...prescriptionMedicines];
+    updated[index].medication_id = medicineId;
+    
+    // Find the selected medicine and update the name
+    const selectedMedicine = medicines.find(m => m.id === medicineId);
+    if (selectedMedicine) {
+      updated[index].medicine_name = selectedMedicine.name;
+    }
+    
     setPrescriptionMedicines(updated);
   };
 
@@ -129,7 +146,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
     const updated = [...prescriptionMedicines];
     updated[index] = {
       ...updated[index],
-      medicine_id: medicine.id,
+      medication_id: medicine.id,
       medicine_name: medicine.name
     };
     setPrescriptionMedicines(updated);
@@ -146,7 +163,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
     try {
       // Validate form
       const validMedicines = prescriptionMedicines.filter(med => 
-        med.medicine_id && med.dosage && med.frequency && med.duration
+        med.medication_id && med.dosage && med.frequency && med.duration
       );
 
       if (validMedicines.length === 0) {
@@ -156,7 +173,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
 
       // Convert to prescription format
       const prescriptionMedicineData: PrescriptionMedicine[] = validMedicines.map(med => ({
-        medicine_id: med.medicine_id,
+        medication_id: med.medication_id,
         medicine_name: med.medicine_name,
         dosage: med.dosage,
         frequency: med.frequency,
@@ -297,12 +314,12 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                         onClick={() => {
                           // Add to first empty row or create new row
-                          const emptyIndex = prescriptionMedicines.findIndex(med => !med.medicine_id);
+                          const emptyIndex = prescriptionMedicines.findIndex(med => !med.medication_id);
                           if (emptyIndex >= 0) {
                             selectMedicine(emptyIndex, medicine);
                           } else {
                             setPrescriptionMedicines([...prescriptionMedicines, {
-                              medicine_id: medicine.id,
+                              medication_id: medicine.id,
                               medicine_name: medicine.name,
                               dosage: '',
                               frequency: '',
@@ -351,14 +368,8 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
                           Medicine Name *
                         </label>
                         <select
-                          value={medicine.medicine_id}
-                          onChange={(e) => {
-                            const selectedMedicine = medicines.find(m => m.id === e.target.value);
-                            if (selectedMedicine) {
-                              updateMedicine(index, 'medicine_id', e.target.value);
-                              updateMedicine(index, 'medicine_name', selectedMedicine.name);
-                            }
-                          }}
+                          value={medicine.medication_id}
+                          onChange={(e) => updateMedicineFromSelect(index, e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         >

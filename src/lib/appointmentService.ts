@@ -1197,10 +1197,18 @@ export async function getAppointmentStats(
 
     const today = new Date().toISOString().split('T')[0];
     const total = appointments?.length || 0;
-    const scheduled = appointments?.filter(apt => apt.status === 'scheduled').length || 0;
+    
+    // Only count future scheduled appointments (not past ones)
+    const scheduled = appointments?.filter(apt => 
+      apt.status === 'scheduled' && 
+      new Date(apt.appointment_date) >= new Date(today)
+    ).length || 0;
+    
     const completed = appointments?.filter(apt => apt.status === 'completed').length || 0;
     const cancelled = appointments?.filter(apt => apt.status === 'cancelled').length || 0;
     const todayCount = appointments?.filter(apt => apt.appointment_date === today).length || 0;
+    
+    // Upcoming count includes both scheduled and confirmed future appointments
     const upcomingCount = appointments?.filter(apt => 
       new Date(apt.appointment_date) > new Date(today) && 
       ['scheduled', 'confirmed'].includes(apt.status)

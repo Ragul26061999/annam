@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 
 export interface DashboardStats {
   totalPatients: number;
+  admittedPatients: number;
   totalAppointments: number;
   todayAppointments: number;
   upcomingAppointments: number;
@@ -13,6 +14,10 @@ export interface DashboardStats {
   occupiedBeds: number;
   availableBeds: number;
   bedOccupancyRate: number;
+  criticalPatients: number;
+  emergencyAdmissions: number;
+  totalStaff: number;
+  pendingBills: number;
 }
 
 export interface BedStatus {
@@ -31,6 +36,7 @@ export interface RecentAppointment {
   type: string;
   status: string;
   doctorName?: string;
+  patientInitials?: string;
 }
 
 export interface RecentPatient {
@@ -42,11 +48,30 @@ export interface RecentPatient {
   lastVisit?: string;
 }
 
+export interface DepartmentStatus {
+  id: string;
+  name: string;
+  status: string;
+  location: string | null;
+  occupancyRate: number;
+  bedCount: number;
+  occupiedBeds: number;
+}
+
+export interface QuickStats {
+  staffOnDuty: number;
+  pendingLabResults: number;
+  medicineRequests: number;
+  dischargeToday: number;
+}
+
 export interface DashboardData {
   stats: DashboardStats;
   recentAppointments: RecentAppointment[];
   recentPatients: RecentPatient[];
   bedStatus: BedStatus[];
+  departmentStatus: DepartmentStatus[];
+  quickStats: QuickStats;
 }
 
 /**
@@ -54,87 +79,147 @@ export interface DashboardData {
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
-    const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
-
-    // Get total patients count
+    // Get total patients (all patients regardless of status)
     const { count: totalPatients } = await supabase
       .from('patients')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active');
+      .select('*', { count: 'exact', head: true });
 
-    // Get appointment statistics
-    const { data: appointments } = await supabase
-      .from('appointments')
-      .select('id, appointment_date, appointment_time, status')
-      .gte('appointment_date', today);
+    // Get admitted patients (patients with active bed allocations)
+    const { count: admittedPatients } = await supabase
+      .from('patients')
+      .select(`
+        id,
+        bed_allocations!inner(
+          status
+        )
+      `, { count: 'exact', head: true })
+      .eq('bed_allocations.status', 'active');
 
-    const todayAppointments = appointments?.filter(apt => 
-      apt.appointment_date === today
-    ).length || 0;
-
-    const upcomingAppointments = appointments?.filter(apt => 
-      new Date(apt.appointment_date) > now && 
-      ['scheduled', 'confirmed'].includes(apt.status)
-    ).length || 0;
-
-    const { count: completedAppointments } = await supabase
-      .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'completed');
-
-    const { count: cancelledAppointments } = await supabase
-      .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'cancelled');
-
+    // Get total appointments
     const { count: totalAppointments } = await supabase
       .from('appointments')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
 
-    // Get doctor statistics
+    // Get today's appointments
+    const today = new Date().toISOString().split('T')[0];
+    const { count: todayAppointments } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('appointment_date', today);
+
+    // Get upcoming appointments (future dates)
+    const { count: upcomingAppointments } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .gt('appointment_date', today)
+      .in('status', ['scheduled', 'confirmed']);
+
+    // Get completed appointments
+    const { count: completedAppointments } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed');
+
+    // Get cancelled appointments
+    const { count: cancelledAppointments } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'cancelled');
+
+    // Get total doctors
     const { count: totalDoctors } = await supabase
       .from('doctors')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active');
+      .select('*', { count: 'exact', head: true });
 
+    // Get available doctors
     const { count: availableDoctors } = await supabase
       .from('doctors')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .eq('availability_status', 'available');
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
 
     // Get bed statistics
     const { count: totalBeds } = await supabase
       .from('beds')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
 
     const { count: occupiedBeds } = await supabase
-      .from('bed_allocations')
-      .select('id', { count: 'exact', head: true })
+      .from('beds')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'occupied');
+
+    const { count: availableBeds } = await supabase
+      .from('beds')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'available');
+
+    // Get critical patients (patients with critical status)
+    const { count: criticalPatients } = await supabase
+      .from('patients')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'critical');
+
+    // Get emergency admissions today
+    const { count: emergencyAdmissions } = await supabase
+      .from('patients')
+      .select('*', { count: 'exact', head: true })
+      .eq('admission_type', 'emergency')
+      .gte('admission_date', today);
+
+    // Get total staff
+    const { count: totalStaff } = await supabase
+      .from('staff')
+      .select('*', { count: 'exact', head: true })
       .eq('status', 'active');
 
-    const availableBeds = (totalBeds || 0) - (occupiedBeds || 0);
-    const bedOccupancyRate = totalBeds ? Math.round(((occupiedBeds || 0) / totalBeds) * 100) : 0;
+    // Get pending bills
+    const { count: pendingBills } = await supabase
+      .from('billing')
+      .select('*', { count: 'exact', head: true })
+      .eq('payment_status', 'pending');
+
+    const bedOccupancyRate = totalBeds && totalBeds > 0 ? Math.round(((occupiedBeds || 0) / totalBeds) * 100) : 0;
 
     return {
       totalPatients: totalPatients || 0,
+      admittedPatients: admittedPatients || 0,
       totalAppointments: totalAppointments || 0,
-      todayAppointments,
-      upcomingAppointments,
+      todayAppointments: todayAppointments || 0,
+      upcomingAppointments: upcomingAppointments || 0,
       completedAppointments: completedAppointments || 0,
       cancelledAppointments: cancelledAppointments || 0,
       totalDoctors: totalDoctors || 0,
       availableDoctors: availableDoctors || 0,
       totalBeds: totalBeds || 0,
       occupiedBeds: occupiedBeds || 0,
-      availableBeds,
-      bedOccupancyRate
+      availableBeds: availableBeds || 0,
+      bedOccupancyRate,
+      criticalPatients: criticalPatients || 0,
+      emergencyAdmissions: emergencyAdmissions || 0,
+      totalStaff: totalStaff || 0,
+      pendingBills: pendingBills || 0,
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
-    throw error;
+    // Return default values if there's an error
+    return {
+      totalPatients: 0,
+      admittedPatients: 0,
+      totalAppointments: 0,
+      todayAppointments: 0,
+      upcomingAppointments: 0,
+      completedAppointments: 0,
+      cancelledAppointments: 0,
+      totalDoctors: 0,
+      availableDoctors: 0,
+      totalBeds: 0,
+      occupiedBeds: 0,
+      availableBeds: 0,
+      bedOccupancyRate: 0,
+      criticalPatients: 0,
+      emergencyAdmissions: 0,
+      totalStaff: 0,
+      pendingBills: 0,
+    };
   }
 }
 
@@ -144,45 +229,46 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getRecentAppointments(limit: number = 5): Promise<RecentAppointment[]> {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
+    
     const { data: appointments, error } = await supabase
       .from('appointments')
       .select(`
         id,
-        appointment_date,
         appointment_time,
+        appointment_date,
         type,
         status,
-        patient:patients(name),
-        doctor:doctors(
-          user:users(name)
+        patients!inner(name),
+        doctors!inner(
+          users!inner(name)
         )
       `)
-      .in('appointment_date', [today, tomorrowStr])
-      .in('status', ['scheduled', 'confirmed', 'in_progress'])
-      .order('appointment_date', { ascending: true })
+      .eq('appointment_date', today)
       .order('appointment_time', { ascending: true })
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching recent appointments:', error);
+      console.error('Error fetching appointments:', error);
       return [];
     }
 
-    return appointments?.map((apt: any) => ({
-      id: apt.id,
-      patientName: apt.patient?.name || 'Unknown Patient',
-      appointmentTime: apt.appointment_time,
-      appointmentDate: apt.appointment_date === today ? 'Today' : 'Tomorrow',
-      type: apt.type || 'Consultation',
-      status: apt.status,
-      doctorName: apt.doctor?.user?.name
-    })) || [];
+    return (appointments || []).map((appointment: any) => {
+      const patientName = appointment.patients?.name || 'Unknown Patient';
+      const doctorName = appointment.doctors?.users?.name || 'Unknown Doctor';
+      
+      return {
+        id: appointment.id,
+        patientName,
+        appointmentTime: appointment.appointment_time,
+        appointmentDate: appointment.appointment_date,
+        type: appointment.type || 'General Consultation',
+        status: appointment.status,
+        doctorName,
+        patientInitials: getInitials(patientName),
+      };
+    });
   } catch (error) {
-    console.error('Error fetching recent appointments:', error);
+    console.error('Error in getRecentAppointments:', error);
     return [];
   }
 }
@@ -192,93 +278,35 @@ export async function getRecentAppointments(limit: number = 5): Promise<RecentAp
  */
 export async function getRecentPatients(limit: number = 4): Promise<RecentPatient[]> {
   try {
-    // Get recently admitted patients or those with recent appointments
-    const { data: recentAdmissions, error: admissionError } = await supabase
-      .from('bed_allocations')
+    const { data: patients, error } = await supabase
+      .from('patients')
       .select(`
-        patient:patients(id, name, status),
+        id,
+        name,
+        status,
         admission_date,
-        reason_for_admission
+        admission_type,
+        primary_complaint
       `)
       .eq('status', 'active')
       .order('admission_date', { ascending: false })
       .limit(limit);
 
-    if (admissionError) {
-      console.error('Error fetching recent admissions:', admissionError);
+    if (error) {
+      console.error('Error fetching patients:', error);
+      return [];
     }
 
-    // Get patients with recent appointments if we don't have enough admissions
-    const { data: recentAppointments, error: appointmentError } = await supabase
-      .from('appointments')
-      .select(`
-        patient:patients(id, name, status),
-        appointment_date,
-        chief_complaint,
-        diagnosis
-      `)
-      .gte('appointment_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-      .order('appointment_date', { ascending: false })
-      .limit(limit * 2);
-
-    if (appointmentError) {
-      console.error('Error fetching recent appointments:', appointmentError);
-    }
-
-    // Map patient status to valid status types
-    const mapPatientStatus = (status: string, context: 'admission' | 'appointment', hasDiagnosis?: boolean): string => {
-      const statusMap: { [key: string]: string } = {
-        'critical': 'Critical',
-        'stable': 'Stable', 
-        'admitted': 'Admitted',
-        'diagnosed': 'Diagnosed',
-        'consulting': 'Consulting',
-        'recovering': 'Recovering',
-        'active': context === 'admission' ? 'Admitted' : 'Stable',
-        'inactive': 'Stable'
-      };
-      
-      if (context === 'appointment') {
-        return hasDiagnosis ? 'Diagnosed' : 'Consulting';
-      }
-      
-      return statusMap[status?.toLowerCase()] || 'Stable';
-    };
-
-    const patients: RecentPatient[] = [];
-    const seenPatients = new Set<string>();
-
-    // Add admitted patients first
-    recentAdmissions?.forEach((admission: any) => {
-      if (admission.patient && !seenPatients.has(admission.patient.id)) {
-        patients.push({
-          id: admission.patient.id,
-          name: admission.patient.name,
-          status: mapPatientStatus(admission.patient.status, 'admission'),
-          condition: admission.reason_for_admission || 'General Care',
-          admissionDate: admission.admission_date
-        });
-        seenPatients.add(admission.patient.id);
-      }
-    });
-
-    // Add patients from recent appointments if we need more
-    recentAppointments?.forEach((appointment: any) => {
-      if (patients.length < limit && appointment.patient && !seenPatients.has(appointment.patient.id)) {
-        patients.push({
-          id: appointment.patient.id,
-          name: appointment.patient.name,
-          status: mapPatientStatus(appointment.patient.status, 'appointment', !!appointment.diagnosis),
-          condition: appointment.diagnosis || appointment.chief_complaint || 'General Consultation',
-          lastVisit: appointment.appointment_date
-        });
-        seenPatients.add(appointment.patient.id);
-      }
-    });
-
-    return patients.slice(0, limit);
+    return (patients || []).map(patient => ({
+      id: patient.id,
+      name: patient.name,
+      status: patient.status,
+      condition: patient.primary_complaint || patient.admission_type || 'General',
+      admissionDate: patient.admission_date,
+      lastVisit: patient.admission_date,
+    }));
   } catch (error) {
-    console.error('Error fetching recent patients:', error);
+    console.error('Error in getRecentPatients:', error);
     return [];
   }
 }
@@ -288,81 +316,161 @@ export async function getRecentPatients(limit: number = 4): Promise<RecentPatien
  */
 export async function getBedStatus(): Promise<BedStatus[]> {
   try {
-    const { data: beds, error: bedsError } = await supabase
+    const { data: beds, error } = await supabase
       .from('beds')
-      .select('id, bed_type');
+      .select('bed_type, status');
 
-    if (bedsError) {
-      console.error('Error fetching beds:', bedsError);
+    if (error) {
+      console.error('Error fetching bed status:', error);
       return [];
     }
 
-    const { data: allocations, error: allocationsError } = await supabase
-      .from('bed_allocations')
-      .select(`
-        bed_id,
-        bed:beds(bed_type)
-      `)
-      .eq('status', 'active');
+    // Group beds by type and calculate statistics
+    const bedStats: { [key: string]: { total: number; occupied: number; available: number } } = {};
 
-    if (allocationsError) {
-      console.error('Error fetching bed allocations:', allocationsError);
-      return [];
-    }
-
-    // Group beds by type
-    const bedsByType: { [key: string]: { total: number; occupied: number } } = {};
-
-    beds?.forEach(bed => {
-      const bedType = bed.bed_type || 'general';
-      if (!bedsByType[bedType]) {
-        bedsByType[bedType] = { total: 0, occupied: 0 };
+    (beds || []).forEach(bed => {
+      const type = bed.bed_type || 'general';
+      if (!bedStats[type]) {
+        bedStats[type] = { total: 0, occupied: 0, available: 0 };
       }
-      bedsByType[bedType].total++;
-    });
-
-    allocations?.forEach((allocation: any) => {
-      const bedType = allocation.bed?.bed_type || 'general';
-      if (bedsByType[bedType]) {
-        bedsByType[bedType].occupied++;
+      
+      bedStats[type].total++;
+      if (bed.status === 'occupied') {
+        bedStats[type].occupied++;
+      } else if (bed.status === 'available') {
+        bedStats[type].available++;
       }
     });
 
-    return Object.entries(bedsByType).map(([bedType, stats]) => ({
+    return Object.entries(bedStats).map(([bedType, stats]) => ({
       bedType: bedType.charAt(0).toUpperCase() + bedType.slice(1),
       total: stats.total,
       occupied: stats.occupied,
-      available: stats.total - stats.occupied,
-      occupancyRate: Math.round((stats.occupied / stats.total) * 100)
+      available: stats.available,
+      occupancyRate: stats.total > 0 ? Math.round((stats.occupied / stats.total) * 100) : 0,
     }));
   } catch (error) {
-    console.error('Error fetching bed status:', error);
+    console.error('Error in getBedStatus:', error);
     return [];
   }
 }
 
-/**
- * Get all dashboard data in one call
- */
+export async function getDepartmentStatus(): Promise<DepartmentStatus[]> {
+  try {
+    const { data: departments, error } = await supabase
+      .from('departments')
+      .select(`
+        id,
+        name,
+        status,
+        location,
+        beds(id, status)
+      `)
+      .eq('status', 'active')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching department status:', error);
+      return [];
+    }
+
+    return (departments || []).map(dept => {
+      const totalBeds = dept.beds?.length || 0;
+      const occupiedBeds = dept.beds?.filter(bed => bed.status === 'occupied').length || 0;
+      const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+
+      return {
+        id: dept.id,
+        name: dept.name,
+        status: dept.status,
+        location: dept.location,
+        bedCount: totalBeds,
+        occupiedBeds,
+        occupancyRate,
+      };
+    });
+  } catch (error) {
+    console.error('Error in getDepartmentStatus:', error);
+    return [];
+  }
+}
+
+export async function getQuickStats(): Promise<QuickStats> {
+  try {
+    // Staff on duty
+    const { count: staffOnDuty } = await supabase
+      .from('staff')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+
+    // Pending lab results
+    const { count: pendingLabResults } = await supabase
+      .from('lab_reports')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    // Medicine requests
+    const { count: medicineRequests } = await supabase
+      .from('prescriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    // Discharge today
+    const today = new Date().toISOString().split('T')[0];
+    const { count: dischargeToday } = await supabase
+      .from('bed_allocations')
+      .select('*', { count: 'exact', head: true })
+      .eq('discharge_date', today);
+
+    return {
+      staffOnDuty: staffOnDuty || 0,
+      pendingLabResults: pendingLabResults || 0,
+      medicineRequests: medicineRequests || 0,
+      dischargeToday: dischargeToday || 0,
+    };
+  } catch (error) {
+    console.error('Error fetching quick stats:', error);
+    return {
+      staffOnDuty: 0,
+      pendingLabResults: 0,
+      medicineRequests: 0,
+      dischargeToday: 0,
+    };
+  }
+}
+
+// Main function to get all dashboard data
 export async function getDashboardData(): Promise<DashboardData> {
   try {
-    const [stats, recentAppointments, recentPatients, bedStatus] = await Promise.all([
+    const [stats, recentAppointments, recentPatients, bedStatus, departmentStatus, quickStats] = await Promise.all([
       getDashboardStats(),
       getRecentAppointments(),
       getRecentPatients(),
-      getBedStatus()
+      getBedStatus(),
+      getDepartmentStatus(),
+      getQuickStats()
     ]);
 
     return {
       stats,
       recentAppointments,
       recentPatients,
-      bedStatus
+      bedStatus,
+      departmentStatus,
+      quickStats
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    throw error;
+    throw new Error('Failed to fetch dashboard data');
   }
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2);
 }
 
 /**

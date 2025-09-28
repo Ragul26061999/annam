@@ -47,3 +47,30 @@ export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 };
+
+export const getCurrentUserProfile = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log('Auth user:', user);
+  
+  if (!user) {
+    console.log('No authenticated user found');
+    return null;
+  }
+
+  // Get the user profile from our users table
+  const { data: userProfile, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('auth_id', user.id)
+    .single();
+
+  console.log('User profile query result:', { userProfile, error });
+
+  if (error) {
+    console.error('Error fetching user profile:', error);
+    return null;
+  }
+
+  console.log('Returning user profile:', userProfile);
+  return userProfile;
+};

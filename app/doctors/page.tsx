@@ -227,7 +227,8 @@ export default function DoctorsPage() {
   const [stats, setStats] = useState({
     totalDoctors: 0,
     onDuty: 0,
-    consultationsToday: 0
+    consultationsToday: 0,
+    pendingAppointments: 0
   });
 
   const [formData, setFormData] = useState<DoctorFormData>({
@@ -291,7 +292,20 @@ export default function DoctorsPage() {
       // Calculate stats
       // Get real stats from database
       const totalDoctors = doctorsData.length;
-      const onDuty = doctorsData.filter(d => d.status === 'active').length;
+      
+      // Calculate doctors appearing today based on their working days and availability
+      const todayDayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const doctorsAppearingToday = doctorsData.filter(doctor => {
+        if (doctor.status !== 'active') return false;
+        
+        const availabilityData = doctor.availability_hours;
+        if (!availabilityData || !availabilityData.workingDays) {
+          // Default working days if not specified (Mon-Fri)
+          return [1, 2, 3, 4, 5].includes(todayDayOfWeek);
+        }
+        
+        return availabilityData.workingDays.includes(todayDayOfWeek);
+      }).length;
       
       // Get consultation stats from appointments
       const today = new Date().toISOString().split('T')[0];
@@ -300,11 +314,19 @@ export default function DoctorsPage() {
         .select('id')
         .eq('appointment_date', today)
         .eq('status', 'completed');
+
+      // Get pending appointments for today
+      const { data: pendingAppointmentsData } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('appointment_date', today)
+        .in('status', ['scheduled', 'confirmed', 'pending']);
       
       setStats({
         totalDoctors,
-        onDuty,
-        consultationsToday: appointmentsData?.length || 0
+        onDuty: doctorsAppearingToday,
+        consultationsToday: appointmentsData?.length || 0,
+        pendingAppointments: pendingAppointmentsData?.length || 0
       });
     } catch (error) {
       console.error('Error loading doctors:', error);
@@ -497,11 +519,13 @@ export default function DoctorsPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">On Duty</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Available Today</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{stats.onDuty}</p>
               <div className="flex items-center mt-2">
-                <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">75% available</span>
+                <CheckCircle size={14} className="text-green-500 mr-1" />
+                <span className="text-xs text-gray-500">
+                  {stats.totalDoctors > 0 ? Math.round((stats.onDuty / stats.totalDoctors) * 100) : 0}% available
+                </span>
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center">
@@ -517,7 +541,7 @@ export default function DoctorsPage() {
               <p className="text-2xl font-bold text-gray-900 mt-1">{stats.consultationsToday}</p>
               <div className="flex items-center mt-2">
                 <Clock className="h-3 w-3 text-blue-500 mr-1" />
-                <span className="text-sm font-medium text-blue-600">42 pending</span>
+                <span className="text-sm font-medium text-blue-600">{stats.pendingAppointments} pending</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl flex items-center justify-center">

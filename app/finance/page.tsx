@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  DollarSign, 
+  IndianRupee, 
   Search, 
   Filter, 
   Plus, 
@@ -51,7 +51,7 @@ export default function FinancePage() {
               </div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-              <DollarSign className="text-white" size={20} />
+              <IndianRupee className="text-white" size={20} />
             </div>
           </div>
         </div>
@@ -333,7 +333,7 @@ export default function FinancePage() {
               
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <DollarSign className="h-4 w-4 text-orange-500 mr-3" />
+                  <IndianRupee className="h-4 w-4 text-orange-500 mr-3" />
                   <span className="text-sm text-gray-700">Cash</span>
                 </div>
                 <span className="text-sm font-medium text-gray-900">20%</span>

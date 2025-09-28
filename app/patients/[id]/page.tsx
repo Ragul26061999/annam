@@ -28,14 +28,19 @@ import {
   Eye,
   CheckCircle,
   AlertTriangle,
-  X
+  X,
+  Bed,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { getPatientWithRelatedData } from '../../../src/lib/patientService';
 import { getPatientVitals, recordVitals, updateVitalRecord } from '../../../src/lib/vitalsService';
 import { getMedicalHistory, MedicalHistoryEvent } from '../../../src/lib/medicalHistoryService';
 import MedicalHistoryForm from '../../../src/components/MedicalHistoryForm';
 import AddDummyMedicalHistory from '../../../src/components/AddDummyMedicalHistory';
-import { getCurrentUser } from '../../../src/lib/supabase';
+import MedicationHistory from '../../../src/components/MedicationHistory';
+import { getCurrentUser, getCurrentUserProfile } from '../../../src/lib/supabase';
+import PrescriptionForm from '../../../src/components/PrescriptionForm';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -83,6 +88,7 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [activeSubTab, setActiveSubTab] = useState('appointments');
   const [vitals, setVitals] = useState<any[]>([]);
   const [showVitalsForm, setShowVitalsForm] = useState(false);
   const [editingVital, setEditingVital] = useState<any | null>(null);
@@ -91,11 +97,20 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
   const [medicalHistory, setMedicalHistory] = useState<MedicalHistoryEvent[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showMedicalHistoryForm, setShowMedicalHistoryForm] = useState(false);
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
-      const user = await getCurrentUser();
-      setCurrentUser(user);
+      console.log('Fetching user profile...');
+      const userProfile = await getCurrentUserProfile();
+      console.log('User profile fetched:', userProfile);
+      setCurrentUser(userProfile);
+      
+      // If no user profile, try to get auth user for debugging
+      if (!userProfile) {
+        const authUser = await getCurrentUser();
+        console.log('Auth user (for debugging):', authUser);
+      }
     };
     fetchUser();
   }, []);
@@ -262,6 +277,13 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                 <Edit className="h-4 w-4" />
                 Edit Patient
               </button>
+              <button 
+                onClick={() => setShowPrescriptionForm(true)}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+              >
+                <Pill className="h-4 w-4" />
+                Prescribe Medicine
+              </button>
               <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 New Appointment
@@ -409,8 +431,8 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                 { id: 'overview', name: 'Overview', icon: Eye },
                 { id: 'vitals', name: 'Vitals', icon: Activity },
                 { id: 'medical-history', name: 'Medical History', icon: Heart },
-                { id: 'contacts', name: 'Contacts', icon: Users },
-                { id: 'appointments', name: 'Appointments', icon: Calendar },
+                { id: 'medications', name: 'Medications', icon: Pill },
+                { id: 'appointments', name: 'Appointments & Admissions', icon: Calendar },
                 { id: 'billing', name: 'Billing', icon: FileText }
               ].map((tab) => (
                 <button
@@ -523,32 +545,64 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                 ) : (
                   <div className="space-y-4">
                     {vitals.map((vital) => (
-                      <div key={vital.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div key={vital.id} className="bg-white rounded-lg border border-gray-200 p-4 relative">
+                        {/* Alert indicator */}
+                        {vital.alerts && vital.alerts.length > 0 && (
+                          <div className="absolute top-2 right-2">
+                            <div className="flex items-center gap-1 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                              <AlertTriangle className="h-3 w-3" />
+                              {vital.alerts.length} Alert{vital.alerts.length > 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <h4 className="font-medium text-gray-900">
                               Recorded on {new Date(vital.recorded_at).toLocaleString()}
                             </h4>
-                            <p className="text-sm text-gray-500">Recorded by: {vital.user?.name || 'Unknown'}</p>
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <span>Recorded by: {vital.recorded_by_user?.name || 'Unknown'}</span>
+                              {vital.recording_location && (
+                                <span>Location: {vital.recording_location}</span>
+                              )}
+                              {vital.recording_device && (
+                                <span>Device: {vital.recording_device}</span>
+                              )}
+                              {vital.version > 1 && (
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                  v{vital.version}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              setEditingVital(vital);
-                              setShowVitalsForm(true);
-                            }}
-                            className="text-orange-500 hover:text-orange-700 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {vital.is_validated && (
+                              <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                                <CheckCircle className="h-3 w-3" />
+                                Validated
+                              </div>
+                            )}
+                            <button
+                              onClick={() => {
+                                setEditingVital(vital);
+                                setShowVitalsForm(true);
+                              }}
+                              className="text-orange-500 hover:text-orange-700 text-sm font-medium"
+                            >
+                              Edit
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {vital.systolic_bp && vital.diastolic_bp && (
+                          {vital.blood_pressure_systolic && vital.blood_pressure_diastolic && (
                             <div className="bg-red-50 p-3 rounded-lg">
                               <p className="text-xs text-red-600 font-medium">Blood Pressure</p>
                               <p className="text-lg font-semibold text-red-800">
-                                {vital.systolic_bp}/{vital.diastolic_bp}
+                                {vital.blood_pressure_systolic}/{vital.blood_pressure_diastolic}
                               </p>
+                              <p className="text-xs text-red-600">mmHg</p>
                             </div>
                           )}
                           
@@ -565,7 +619,7 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                             <div className="bg-yellow-50 p-3 rounded-lg">
                               <p className="text-xs text-yellow-600 font-medium">Temperature</p>
                               <p className="text-lg font-semibold text-yellow-800">
-                                {vital.temperature} <span className="text-sm">°C</span>
+                                {vital.temperature}°F
                               </p>
                             </div>
                           )}
@@ -575,6 +629,15 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                               <p className="text-xs text-green-600 font-medium">Oxygen Saturation</p>
                               <p className="text-lg font-semibold text-green-800">
                                 {vital.oxygen_saturation}%
+                              </p>
+                            </div>
+                          )}
+                          
+                          {vital.respiratory_rate && (
+                            <div className="bg-cyan-50 p-3 rounded-lg">
+                              <p className="text-xs text-cyan-600 font-medium">Respiratory Rate</p>
+                              <p className="text-lg font-semibold text-cyan-800">
+                                {vital.respiratory_rate} <span className="text-sm">bpm</span>
                               </p>
                             </div>
                           )}
@@ -621,6 +684,7 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                               </p>
                             </div>
                           )}
+                          
                         </div>
                         
                         {vital.notes && (
@@ -630,6 +694,15 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
                             </p>
                           </div>
                         )}
+                        
+                        {/* Metadata footer */}
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
+                          <div className="flex items-center gap-4">
+                            {vital.updated_at !== vital.created_at && (
+                              <span>Last updated: {new Date(vital.updated_at).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -726,146 +799,191 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
               </div>
             )}
 
-            {/* Contacts Tab */}
-            {activeTab === 'contacts' && (
-              <div className="space-y-6">
-                {/* Guardian Information */}
-                {(patient.guardian_name || patient.guardian_phone) && (
-                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                    <h4 className="font-medium text-purple-900 mb-3 flex items-center gap-2">
-                      <UserCheck className="h-4 w-4" />
-                      Guardian / Attendant Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {patient.guardian_name && (
-                        <div>
-                          <span className="text-sm text-purple-700 font-medium">Name:</span>
-                          <p className="text-purple-800">{patient.guardian_name}</p>
-                        </div>
-                      )}
-                      {patient.guardian_relationship && (
-                        <div>
-                          <span className="text-sm text-purple-700 font-medium">Relationship:</span>
-                          <p className="text-purple-800 capitalize">{patient.guardian_relationship}</p>
-                        </div>
-                      )}
-                      {patient.guardian_phone && (
-                        <div>
-                          <span className="text-sm text-purple-700 font-medium">Phone:</span>
-                          <p className="text-purple-800">{patient.guardian_phone}</p>
-                        </div>
-                      )}
-                      {patient.guardian_address && (
-                        <div className="md:col-span-2">
-                          <span className="text-sm text-purple-700 font-medium">Address:</span>
-                          <p className="text-purple-800">{patient.guardian_address}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Emergency Contact */}
-                {(patient.emergency_contact_name || patient.emergency_contact_phone) && (
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <h4 className="font-medium text-red-900 mb-3 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Emergency Contact Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {patient.emergency_contact_name && (
-                        <div>
-                          <span className="text-sm text-red-700 font-medium">Name:</span>
-                          <p className="text-red-800">{patient.emergency_contact_name}</p>
-                        </div>
-                      )}
-                      {patient.emergency_contact_relationship && (
-                        <div>
-                          <span className="text-sm text-red-700 font-medium">Relationship:</span>
-                          <p className="text-red-800 capitalize">{patient.emergency_contact_relationship}</p>
-                        </div>
-                      )}
-                      {patient.emergency_contact_phone && (
-                        <div className="md:col-span-2">
-                          <span className="text-sm text-red-700 font-medium">Phone:</span>
-                          <p className="text-red-800">{patient.emergency_contact_phone}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Insurance Information */}
-                {(patient.insurance_provider || patient.insurance_number) && (
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Insurance Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {patient.insurance_provider && (
-                        <div>
-                          <span className="text-sm text-blue-700 font-medium">Provider:</span>
-                          <p className="text-blue-800">{patient.insurance_provider}</p>
-                        </div>
-                      )}
-                      {patient.insurance_number && (
-                        <div>
-                          <span className="text-sm text-blue-700 font-medium">Policy Number:</span>
-                          <p className="text-blue-800">{patient.insurance_number}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+            {/* Medications Tab */}
+            {activeTab === 'medications' && (
+              <MedicationHistory patientId={patient.id} />
             )}
 
-            {/* Appointments Tab */}
+            {/* Appointments & Admissions Tab */}
             {activeTab === 'appointments' && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-gray-900">Appointment History</h4>
-                  <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Appointment
-                  </button>
+              <div className="space-y-6">
+                {/* Sub-tabs for Appointments and Admissions */}
+                <div className="border-b border-gray-200">
+                  <nav className="flex space-x-8">
+                    <button
+                      onClick={() => setActiveSubTab('appointments')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                        activeSubTab === 'appointments'
+                          ? 'border-orange-500 text-orange-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      Appointments
+                    </button>
+                    <button
+                      onClick={() => setActiveSubTab('admissions')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                        activeSubTab === 'admissions'
+                          ? 'border-orange-500 text-orange-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Bed className="h-4 w-4" />
+                      Admission History
+                    </button>
+                  </nav>
                 </div>
 
-                {patient.appointments && patient.appointments.length > 0 ? (
-                  <div className="space-y-3">
-                    {patient.appointments.map((appointment, index) => (
-                      <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-gray-900">{appointment.type}</p>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(appointment.appointment_date)} at {appointment.appointment_time}
-                            </p>
-                            {appointment.doctor && (
-                              <p className="text-sm text-gray-600">
-                                Dr. {appointment.doctor.user?.name || 'Unknown'} - {appointment.doctor.user?.specialization || 'General'}
-                              </p>
-                            )}
-                            {appointment.symptoms && (
-                              <p className="text-sm text-gray-500 mt-1">Symptoms: {appointment.symptoms}</p>
+                {/* Appointments Sub-tab */}
+                {activeSubTab === 'appointments' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium text-gray-900">Appointment History</h4>
+                      <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        New Appointment
+                      </button>
+                    </div>
+
+                    {patient.appointments && patient.appointments.length > 0 ? (
+                      <div className="space-y-3">
+                        {patient.appointments.map((appointment, index) => (
+                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium text-gray-900">{appointment.type}</p>
+                                <p className="text-sm text-gray-600">
+                                  {formatDate(appointment.appointment_date)} at {appointment.appointment_time}
+                                </p>
+                                {appointment.doctor && (
+                                  <p className="text-sm text-gray-600">
+                                    Dr. {appointment.doctor.user?.name || 'Unknown'} - {appointment.doctor.user?.specialization || 'General'}
+                                  </p>
+                                )}
+                                {appointment.symptoms && (
+                                  <p className="text-sm text-gray-500 mt-1">Symptoms: {appointment.symptoms}</p>
+                                )}
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                appointment.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {appointment.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-500">No appointments found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Admissions Sub-tab */}
+                {activeSubTab === 'admissions' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium text-gray-900">Admission & Discharge History</h4>
+                    </div>
+
+                    {patient.bed_allocations && patient.bed_allocations.length > 0 ? (
+                      <div className="space-y-3">
+                        {patient.bed_allocations.map((allocation, index) => (
+                          <div key={index} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${
+                                  allocation.status === 'active' ? 'bg-green-100' : 
+                                  allocation.status === 'discharged' ? 'bg-blue-100' : 'bg-gray-100'
+                                }`}>
+                                  {allocation.status === 'active' ? (
+                                    <LogIn className={`h-4 w-4 ${
+                                      allocation.status === 'active' ? 'text-green-600' : 
+                                      allocation.status === 'discharged' ? 'text-blue-600' : 'text-gray-600'
+                                    }`} />
+                                  ) : (
+                                    <LogOut className={`h-4 w-4 ${
+                                      allocation.status === 'active' ? 'text-green-600' : 
+                                      allocation.status === 'discharged' ? 'text-blue-600' : 'text-gray-600'
+                                    }`} />
+                                  )}
+                                </div>
+                                <div>
+                                  <h5 className="font-medium text-gray-900">
+                                    {allocation.status === 'active' ? 'Current Admission' : 'Previous Admission'}
+                                  </h5>
+                                  <p className="text-sm text-gray-600">
+                                    Bed: {allocation.bed?.bed_number || 'N/A'} • Room: {allocation.bed?.room_number || 'N/A'}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                allocation.status === 'active' ? 'bg-green-100 text-green-800' :
+                                allocation.status === 'discharged' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {allocation.status}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">Admission Date:</span>
+                                <p className="font-medium">{formatDateTime(allocation.admission_date)}</p>
+                              </div>
+                              {allocation.discharge_date && (
+                                <div>
+                                  <span className="text-gray-600">Discharge Date:</span>
+                                  <p className="font-medium">{formatDateTime(allocation.discharge_date)}</p>
+                                </div>
+                              )}
+                              <div>
+                                <span className="text-gray-600">Admission Type:</span>
+                                <p className="font-medium">{allocation.admission_type || 'N/A'}</p>
+                              </div>
+                              {allocation.reason && (
+                                <div>
+                                  <span className="text-gray-600">Reason:</span>
+                                  <p className="font-medium">{allocation.reason}</p>
+                                </div>
+                              )}
+                              {allocation.daily_charges && (
+                                <div>
+                                  <span className="text-gray-600">Daily Charges:</span>
+                                  <p className="font-medium">₹{allocation.daily_charges}</p>
+                                </div>
+                              )}
+                              {allocation.total_charges && (
+                                <div>
+                                  <span className="text-gray-600">Total Charges:</span>
+                                  <p className="font-medium">₹{allocation.total_charges}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {allocation.status === 'active' && (
+                              <div className="mt-3 pt-3 border-t border-gray-200">
+                                <div className="flex items-center gap-2 text-sm text-green-600">
+                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                  Currently admitted
+                                </div>
+                              </div>
                             )}
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            appointment.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {appointment.status}
-                          </span>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500">No appointments found</p>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Bed className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-500">No admission history found</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -899,6 +1017,19 @@ export default function PatientDetailsPage({ params }: { params: Promise<{ id: s
           currentUser={currentUser}
         />
       )}
+      
+      {showPrescriptionForm && patient && (
+        <PrescriptionForm
+          patientId={patient.patient_id}
+          patientName={patient.name}
+          currentUser={currentUser}
+          onClose={() => setShowPrescriptionForm(false)}
+          onPrescriptionCreated={() => {
+            // Refresh patient data to show new prescription
+            fetchPatientData();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -918,8 +1049,8 @@ function VitalsForm({
   currentUser: any | null;
 }) {
   const [formData, setFormData] = useState({
-    systolicBp: '',
-    diastolicBp: '',
+    bloodPressureSystolic: '',
+    bloodPressureDiastolic: '',
     heartRate: '',
     temperature: '',
     respiratoryRate: '',
@@ -937,22 +1068,22 @@ function VitalsForm({
   useEffect(() => {
     if (editingVital) {
       setFormData({
-        systolicBp: editingVital.systolic_bp || '',
-        diastolicBp: editingVital.diastolic_bp || '',
-        heartRate: editingVital.heart_rate || '',
-        temperature: editingVital.temperature || '',
-        respiratoryRate: editingVital.respiratory_rate || '',
-        oxygenSaturation: editingVital.oxygen_saturation || '',
-        weight: editingVital.weight || '',
-        height: editingVital.height || '',
-        bloodGlucose: editingVital.blood_glucose || '',
-        painScale: editingVital.pain_scale !== undefined && editingVital.pain_scale !== null ? editingVital.pain_scale.toString() : '',
+        bloodPressureSystolic: editingVital.blood_pressure_systolic?.toString() || '',
+        bloodPressureDiastolic: editingVital.blood_pressure_diastolic?.toString() || '',
+        heartRate: editingVital.heart_rate?.toString() || '',
+        temperature: editingVital.temperature?.toString() || '',
+        respiratoryRate: editingVital.respiratory_rate?.toString() || '',
+        oxygenSaturation: editingVital.oxygen_saturation?.toString() || '',
+        weight: editingVital.weight?.toString() || '',
+        height: editingVital.height?.toString() || '',
+        bloodGlucose: editingVital.blood_glucose?.toString() || '',
+        painScale: editingVital.pain_scale?.toString() || '',
         notes: editingVital.notes || ''
       });
     }
   }, [editingVital]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -966,8 +1097,8 @@ function VitalsForm({
       const vitalsData: any = {
         patientId,
         recordedBy: currentUser?.id || null,
-        systolicBp: formData.systolicBp ? parseInt(formData.systolicBp) : undefined,
-        diastolicBp: formData.diastolicBp ? parseInt(formData.diastolicBp) : undefined,
+        bloodPressureSystolic: formData.bloodPressureSystolic ? parseInt(formData.bloodPressureSystolic) : undefined,
+        bloodPressureDiastolic: formData.bloodPressureDiastolic ? parseInt(formData.bloodPressureDiastolic) : undefined,
         heartRate: formData.heartRate ? parseInt(formData.heartRate) : undefined,
         temperature: formData.temperature ? parseFloat(formData.temperature) : undefined,
         respiratoryRate: formData.respiratoryRate ? parseInt(formData.respiratoryRate) : undefined,
@@ -1028,8 +1159,8 @@ function VitalsForm({
                 </label>
                 <input
                   type="number"
-                  name="systolicBp"
-                  value={formData.systolicBp}
+                  name="bloodPressureSystolic"
+                  value={formData.bloodPressureSystolic}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
@@ -1040,8 +1171,8 @@ function VitalsForm({
                 </label>
                 <input
                   type="number"
-                  name="diastolicBp"
-                  value={formData.diastolicBp}
+                  name="bloodPressureDiastolic"
+                  value={formData.bloodPressureDiastolic}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />

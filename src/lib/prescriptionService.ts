@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 // Prescription interfaces
 export interface Medicine {
   id: string;
-  medicine_code: string;
+  medication_code: string;
   name: string;
   generic_name?: string;
   manufacturer?: string;
@@ -13,7 +13,9 @@ export interface Medicine {
   unit_price?: number;
   stock_quantity?: number;
   minimum_stock_level?: number;
+  maximum_stock_level?: number;
   expiry_date?: string;
+  batch_number?: string;
   storage_conditions?: string;
   prescription_required?: boolean;
   status: string;
@@ -22,7 +24,7 @@ export interface Medicine {
 }
 
 export interface PrescriptionMedicine {
-  medicine_id: string;
+  medication_id: string;
   medicine_name: string;
   dosage: string;
   frequency: string;
@@ -79,7 +81,7 @@ export async function getMedicines(options: {
     const { search, category, status = 'active' } = options;
     
     let query = supabase
-      .from('medicines')
+      .from('medications')
       .select('*')
       .eq('status', status)
       .order('name');
@@ -112,7 +114,7 @@ export async function getMedicines(options: {
 export async function getMedicineById(medicineId: string): Promise<{ medicine: Medicine | null; error: any }> {
   try {
     const { data, error } = await supabase
-      .from('medicines')
+      .from('medications')
       .select('*')
       .eq('id', medicineId)
       .single();
@@ -136,17 +138,51 @@ export async function createPrescription(prescriptionData: PrescriptionData): Pr
   try {
     const prescriptionId = await generatePrescriptionId();
     
-    const { data, error } = await supabase
+    // First create the prescription
+    const { data: prescriptionResult, error: prescriptionError } = await supabase
       .from('prescriptions')
       .insert({
         prescription_id: prescriptionId,
         patient_id: prescriptionData.patient_id,
         doctor_id: prescriptionData.doctor_id,
         appointment_id: prescriptionData.appointment_id,
-        medicines: prescriptionData.medicines,
         instructions: prescriptionData.instructions,
         status: 'active'
       })
+      .select('*')
+      .single();
+
+    if (prescriptionError) {
+      console.error('Error creating prescription:', prescriptionError);
+      return { prescription: null, error: prescriptionError };
+    }
+
+    // Then create prescription items
+    const prescriptionItems = prescriptionData.medicines.map(medicine => ({
+      prescription_id: prescriptionResult.id,
+      medication_id: medicine.medication_id,
+      quantity: medicine.quantity,
+      dosage: medicine.dosage,
+      frequency: medicine.frequency,
+      duration: medicine.duration,
+      instructions: medicine.instructions,
+      status: 'pending'
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('prescription_items')
+      .insert(prescriptionItems);
+
+    if (itemsError) {
+      console.error('Error creating prescription items:', itemsError);
+      // Rollback prescription creation
+      await supabase.from('prescriptions').delete().eq('id', prescriptionResult.id);
+      return { prescription: null, error: itemsError };
+    }
+
+    // Fetch the complete prescription with related data
+    const { data, error } = await supabase
+      .from('prescriptions')
       .select(`
         *,
         patient:patients(id, patient_id, name, phone, email),
@@ -156,16 +192,35 @@ export async function createPrescription(prescriptionData: PrescriptionData): Pr
           specialization,
           user:users(name, phone, email)
         ),
-        appointment:appointments(id, appointment_id, appointment_date, appointment_time)
+        appointment:appointments(id, appointment_id, appointment_date, appointment_time),
+        prescription_items(
+          *,
+          medication:medications(id, name, generic_name, strength, unit_price)
+        )
       `)
+      .eq('id', prescriptionResult.id)
       .single();
 
     if (error) {
-      console.error('Error creating prescription:', error);
+      console.error('Error fetching created prescription:', error);
       return { prescription: null, error };
     }
 
-    return { prescription: data, error: null };
+    // Transform prescription_items to medicines format for backward compatibility
+    const transformedPrescription = {
+      ...data,
+      medicines: data.prescription_items?.map((item: any) => ({
+        medication_id: item.medication_id,
+        medicine_name: item.medication?.name || '',
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions,
+        quantity: item.quantity
+      })) || []
+    };
+
+    return { prescription: transformedPrescription, error: null };
   } catch (error) {
     console.error('Error in createPrescription:', error);
     return { prescription: null, error };
@@ -205,7 +260,11 @@ export async function getPrescriptions(options: {
           specialization,
           user:users(name, phone, email)
         ),
-        appointment:appointments(id, appointment_id, appointment_date, appointment_time)
+        appointment:appointments(id, appointment_id, appointment_date, appointment_time),
+        prescription_items(
+          *,
+          medication:medications(id, name, generic_name, strength, unit_price)
+        )
       `, { count: 'exact' });
 
     // Apply filters
@@ -247,8 +306,22 @@ export async function getPrescriptions(options: {
       };
     }
 
+    // Transform prescription_items to medicines format for backward compatibility
+    const transformedPrescriptions = data?.map(prescription => ({
+      ...prescription,
+      medicines: prescription.prescription_items?.map((item: any) => ({
+        medication_id: item.medication_id,
+        medicine_name: item.medication?.name || '',
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions,
+        quantity: item.quantity
+      })) || []
+    })) || [];
+
     return {
-      prescriptions: data || [],
+      prescriptions: transformedPrescriptions,
       total: count || 0,
       page: page,
       limit: limit
@@ -281,7 +354,11 @@ export async function getPrescriptionById(prescriptionId: string): Promise<{ pre
           qualification,
           user:users(name, phone, email)
         ),
-        appointment:appointments(id, appointment_id, appointment_date, appointment_time, diagnosis)
+        appointment:appointments(id, appointment_id, appointment_date, appointment_time, diagnosis),
+        prescription_items(
+          *,
+          medication:medications(id, name, generic_name, strength, unit_price)
+        )
       `)
       .eq('id', prescriptionId)
       .single();
@@ -291,7 +368,21 @@ export async function getPrescriptionById(prescriptionId: string): Promise<{ pre
       return { prescription: null, error };
     }
 
-    return { prescription: data, error: null };
+    // Transform prescription_items to medicines format for backward compatibility
+    const transformedPrescription = {
+      ...data,
+      medicines: data.prescription_items?.map((item: any) => ({
+        medication_id: item.medication_id,
+        medicine_name: item.medication?.name || '',
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions,
+        quantity: item.quantity
+      })) || []
+    };
+
+    return { prescription: transformedPrescription, error: null };
   } catch (error) {
     console.error('Error in getPrescriptionById:', error);
     return { prescription: null, error };
@@ -399,7 +490,7 @@ export async function getDoctorPrescriptions(doctorId: string): Promise<{ prescr
 export async function getMedicineCategories(): Promise<{ categories: string[]; error: any }> {
   try {
     const { data, error } = await supabase
-      .from('medicines')
+      .from('medications')
       .select('category')
       .not('category', 'is', null)
       .eq('status', 'active');
@@ -422,8 +513,12 @@ export async function getMedicineCategories(): Promise<{ categories: string[]; e
  */
 export async function searchMedicines(searchTerm: string): Promise<{ medicines: Medicine[]; error: any }> {
   try {
+    if (!searchTerm.trim()) {
+      return { medicines: [], error: null };
+    }
+
     const { data, error } = await supabase
-      .from('medicines')
+      .from('medications')
       .select('*')
       .or(`name.ilike.%${searchTerm}%,generic_name.ilike.%${searchTerm}%`)
       .eq('status', 'active')
@@ -450,13 +545,51 @@ export async function updatePrescriptionMedicines(
   medicines: PrescriptionMedicine[]
 ): Promise<{ prescription: Prescription | null; error: any }> {
   try {
+    // First, delete existing prescription items
+    const { error: deleteError } = await supabase
+      .from('prescription_items')
+      .delete()
+      .eq('prescription_id', prescriptionId);
+
+    if (deleteError) {
+      console.error('Error deleting existing prescription items:', deleteError);
+      return { prescription: null, error: deleteError };
+    }
+
+    // Then, insert new prescription items
+    const prescriptionItems = medicines.map(medicine => ({
+      prescription_id: prescriptionId,
+      medication_id: medicine.medication_id,
+      quantity: medicine.quantity,
+      dosage: medicine.dosage,
+      frequency: medicine.frequency,
+      duration: medicine.duration,
+      instructions: medicine.instructions,
+      status: 'pending'
+    }));
+
+    const { error: insertError } = await supabase
+      .from('prescription_items')
+      .insert(prescriptionItems);
+
+    if (insertError) {
+      console.error('Error inserting new prescription items:', insertError);
+      return { prescription: null, error: insertError };
+    }
+
+    // Update prescription updated_at timestamp
+    const { error: updateError } = await supabase
+      .from('prescriptions')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', prescriptionId);
+
+    if (updateError) {
+      console.error('Error updating prescription timestamp:', updateError);
+    }
+
+    // Fetch the updated prescription with related data
     const { data, error } = await supabase
       .from('prescriptions')
-      .update({ 
-        medicines, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', prescriptionId)
       .select(`
         *,
         patient:patients(id, patient_id, name, phone, email),
@@ -465,16 +598,35 @@ export async function updatePrescriptionMedicines(
           doctor_id,
           specialization,
           user:users(name, phone, email)
+        ),
+        prescription_items(
+          *,
+          medication:medications(id, name, generic_name, strength, unit_price)
         )
       `)
+      .eq('id', prescriptionId)
       .single();
 
     if (error) {
-      console.error('Error updating prescription medicines:', error);
+      console.error('Error fetching updated prescription:', error);
       return { prescription: null, error };
     }
 
-    return { prescription: data, error: null };
+    // Transform prescription_items to medicines format for backward compatibility
+    const transformedPrescription = {
+      ...data,
+      medicines: data.prescription_items?.map((item: any) => ({
+        medication_id: item.medication_id,
+        medicine_name: item.medication?.name || '',
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions,
+        quantity: item.quantity
+      })) || []
+    };
+
+    return { prescription: transformedPrescription, error: null };
   } catch (error) {
     console.error('Error in updatePrescriptionMedicines:', error);
     return { prescription: null, error };

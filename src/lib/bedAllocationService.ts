@@ -4,55 +4,49 @@ import { supabase } from './supabase';
 export interface BedAllocationData {
   patientId: string;
   bedId: string;
-  doctorId: string;
+  doctorId?: string;
   admissionDate: string;
-  admissionTime: string;
-  admissionType: 'emergency' | 'elective' | 'referred' | 'transfer';
-  reasonForAdmission: string;
-  allocatedBy: string;
+  admissionType: 'emergency' | 'scheduled' | 'transfer';
+  reason: string;
 }
 
 export interface BedAllocation {
   id: string;
-  allocation_id: string;
   patient_id: string;
   bed_id: string;
   doctor_id: string;
   admission_date: string;
-  admission_time: string;
   discharge_date?: string;
-  discharge_time?: string;
   admission_type: string;
-  reason_for_admission: string;
-  discharge_summary?: string;
-  status: 'active' | 'discharged' | 'transferred';
-  allocated_by: string;
+  reason: string;
+  status: string;
+  daily_charges: number;
+  total_charges: number;
   created_at: string;
   updated_at: string;
-  
-  // Related data
-  patient?: any;
-  bed?: any;
-  doctor?: any;
-  allocated_by_user?: any;
+  patient: {
+    name: string;
+    patient_id: string;
+  };
+  bed: Bed;
+  doctor: {
+    license_number: string;
+    user: {
+      name: string;
+    };
+  };
 }
 
 export interface Bed {
   id: string;
-  bed_id: string;
   bed_number: string;
   room_number: string;
   floor_number: number;
-  ward_name: string;
-  bed_type: 'general' | 'private' | 'icu' | 'surgical' | 'maternity' | 'pediatric';
+  bed_type: string;
   status: 'available' | 'occupied' | 'maintenance' | 'reserved';
-  equipment: string[];
-  features: string[];
-  created_at: string;
-  updated_at: string;
-  
-  // Current allocation
-  current_allocation?: BedAllocation;
+  department_id?: string;
+  daily_rate?: number;
+  features?: string[];
 }
 
 export interface BedStats {
@@ -105,7 +99,7 @@ export async function allocateBed(allocationData: BedAllocationData): Promise<Be
     const { data: bed, error: bedError } = await supabase
       .from('beds')
       .select('*')
-      .eq('bed_id', allocationData.bedId)
+      .eq('id', allocationData.bedId)
       .eq('status', 'available')
       .single();
 
@@ -129,21 +123,17 @@ export async function allocateBed(allocationData: BedAllocationData): Promise<Be
       throw new Error('Patient already has an active bed allocation');
     }
 
-    // Generate allocation ID
-    const allocationId = await generateAllocationId();
-
-    // Create allocation record
+    // Create allocation record with available columns
     const allocationRecord = {
-      allocation_id: allocationId,
       patient_id: allocationData.patientId,
       bed_id: allocationData.bedId,
-      doctor_id: allocationData.doctorId,
+      doctor_id: allocationData.doctorId || null,
       admission_date: allocationData.admissionDate,
-      admission_time: allocationData.admissionTime,
       admission_type: allocationData.admissionType,
-      reason_for_admission: allocationData.reasonForAdmission,
+      reason: allocationData.reason,
       status: 'active',
-      allocated_by: allocationData.allocatedBy
+      daily_charges: 0,
+      total_charges: 0
     };
 
     const { data: allocation, error: allocationError } = await supabase
@@ -151,15 +141,9 @@ export async function allocateBed(allocationData: BedAllocationData): Promise<Be
       .insert([allocationRecord])
       .select(`
         *,
-        patient:patients(id, patient_id, name, phone),
-        bed:beds(id, bed_id, bed_number, room_number, floor_number, ward_name, bed_type),
-        doctor:doctors(
-          id, 
-          doctor_id, 
-          specialization, 
-          user:users(name, phone)
-        ),
-        allocated_by_user:users!allocated_by(id, name, role)
+        patient:patients(name, patient_id),
+        bed:beds(id, bed_number, room_number, floor_number, bed_type),
+        doctor:doctors(license_number, user:users(name))
       `)
       .single();
 
@@ -172,7 +156,7 @@ export async function allocateBed(allocationData: BedAllocationData): Promise<Be
     const { error: updateError } = await supabase
       .from('beds')
       .update({ status: 'occupied' })
-      .eq('bed_id', allocationData.bedId);
+      .eq('id', allocationData.bedId);
 
     if (updateError) {
       console.error('Error updating bed status:', updateError);
@@ -400,15 +384,9 @@ export async function getBedAllocations(options: {
       .from('bed_allocations')
       .select(`
         *,
-        patient:patients(id, patient_id, name, phone),
-        bed:beds(id, bed_id, bed_number, room_number, floor_number, ward_name, bed_type),
-        doctor:doctors(
-          id, 
-          doctor_id, 
-          specialization, 
-          user:users(name, phone)
-        ),
-        allocated_by_user:users!allocated_by(id, name, role)
+        patient:patients(name, patient_id),
+        bed:beds(id, bed_number, room_number, floor_number, bed_type),
+        doctor:doctors(license_number, user:users(name))
       `, { count: 'exact' });
 
     // Apply filters
@@ -615,18 +593,11 @@ export async function getPatientBedHistory(patientId: string): Promise<BedAlloca
       .from('bed_allocations')
       .select(`
         *,
-        bed:beds(id, bed_id, bed_number, room_number, floor_number, ward_name, bed_type),
-        doctor:doctors(
-          id, 
-          doctor_id, 
-          specialization, 
-          user:users(name, phone)
-        ),
-        allocated_by_user:users!allocated_by(id, name, role)
+        bed:beds(id, bed_number, room_number, floor_number, bed_type),
+        doctor:doctors(license_number, user:users(name))
       `)
       .eq('patient_id', patientId)
-      .order('admission_date', { ascending: false })
-      .order('admission_time', { ascending: false });
+      .order('admission_date', { ascending: false });
 
     if (error) {
       console.error('Error fetching patient bed history:', error);
@@ -676,18 +647,11 @@ export async function getBedAllocationById(allocationId: string): Promise<BedAll
       .from('bed_allocations')
       .select(`
         *,
-        patient:patients(id, patient_id, name, phone, date_of_birth, gender, address),
-        bed:beds(id, bed_id, bed_number, room_number, floor_number, ward_name, bed_type),
-        doctor:doctors(
-          id, 
-          doctor_id, 
-          specialization, 
-          qualification,
-          user:users(name, phone, email)
-        ),
-        allocated_by_user:users!allocated_by(id, name, role)
+        patient:patients(name, patient_id),
+        bed:beds(id, bed_number, room_number, floor_number, bed_type),
+        doctor:doctors(license_number, user:users(name))
       `)
-      .eq('allocation_id', allocationId)
+      .eq('id', allocationId)
       .single();
 
     if (error) {
@@ -700,4 +664,4 @@ export async function getBedAllocationById(allocationId: string): Promise<BedAll
     console.error('Error fetching bed allocation:', error);
     throw error;
   }
-} 
+}

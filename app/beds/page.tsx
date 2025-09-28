@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { 
   Bed, 
   Search, 
@@ -16,91 +18,315 @@ import {
   Activity,
   Heart
 } from 'lucide-react';
+import { supabase } from '@/src/lib/supabase';
+
+interface BedData {
+  id: string;
+  bed_number: string;
+  room_number: string;
+  bed_type: string;
+  floor_number: number;
+  status: string;
+  features: string[];
+  daily_rate: string;
+  department_name: string;
+  patient_id: string | null;
+  patient_name: string | null;
+  patient_hospital_id: string | null;
+  admission_date: string | null;
+  discharge_date: string | null;
+}
+
+interface BedStats {
+  totalBeds: number;
+  occupiedBeds: number;
+  availableBeds: number;
+  maintenanceBeds: number;
+  icuBeds: number;
+  generalBeds: number;
+  occupancyRate: number;
+}
 
 export default function BedsPage() {
+  const [beds, setBeds] = useState<BedData[]>([]);
+  const [stats, setStats] = useState<BedStats>({
+    totalBeds: 0,
+    occupiedBeds: 0,
+    availableBeds: 0,
+    maintenanceBeds: 0,
+    icuBeds: 0,
+    generalBeds: 0,
+    occupancyRate: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // New state for search and filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedWard, setSelectedWard] = useState('All Wards');
+  const [selectedStatus, setSelectedStatus] = useState('All Status');
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showDischargeModal, setShowDischargeModal] = useState(false);
+  const [showAddBedModal, setShowAddBedModal] = useState(false);
+  const [selectedBed, setSelectedBed] = useState<BedData | null>(null);
+
+  const fetchBedData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // First, get bed statistics
+      const { data: bedStats, error: statsError } = await supabase
+        .from('beds')
+        .select('status, bed_type');
+
+      if (statsError) {
+        console.error('Error fetching bed stats:', statsError);
+        throw new Error(`Failed to fetch bed statistics: ${statsError.message}`);
+      }
+
+      // Calculate statistics with proper null checks
+      const totalBeds = bedStats?.length || 0;
+      const occupiedBeds = bedStats?.filter(bed => bed?.status === 'occupied').length || 0;
+      const availableBeds = bedStats?.filter(bed => bed?.status === 'available').length || 0;
+      const maintenanceBeds = bedStats?.filter(bed => bed?.status === 'maintenance').length || 0;
+      const icuBeds = bedStats?.filter(bed => bed?.bed_type === 'icu').length || 0;
+      const generalBeds = bedStats?.filter(bed => bed?.bed_type === 'general').length || 0;
+      const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+
+      setStats({
+        totalBeds,
+        occupiedBeds,
+        availableBeds,
+        maintenanceBeds,
+        icuBeds,
+        generalBeds,
+        occupancyRate
+      });
+
+      // Get detailed bed data with patient information
+      const { data: bedData, error: bedError } = await supabase
+        .from('beds')
+        .select(`
+          *,
+          departments(name),
+          bed_allocations!left(
+            patient_id,
+            admission_date,
+            discharge_date,
+            status,
+            patients(
+              id,
+              name,
+              patient_id
+            )
+          )
+        `);
+
+      if (bedError) {
+        console.error('Error fetching bed data:', bedError);
+        throw new Error(`Failed to fetch bed data: ${bedError.message}`);
+      }
+
+      // Transform the data with comprehensive null checks
+      const transformedBeds: BedData[] = bedData?.map(bed => {
+        // Safely handle bed_allocations array
+        const allocations = Array.isArray(bed.bed_allocations) ? bed.bed_allocations : [];
+        
+        // Find active allocation with null checks
+        const activeAllocation = allocations.find((allocation: any) => 
+          allocation && allocation.status === 'active'
+        );
+        
+        // Fix inconsistent bed status - if bed shows occupied but has no active allocation, mark as available
+        const correctedStatus = (bed?.status === 'occupied' && !activeAllocation) ? 'available' : (bed?.status || 'available');
+        
+        return {
+          id: bed?.id || '',
+          bed_number: bed?.bed_number || '',
+          room_number: bed?.room_number || '',
+          bed_type: bed?.bed_type || 'general',
+          floor_number: bed?.floor_number || 1,
+          status: correctedStatus,
+          features: Array.isArray(bed?.features) ? bed.features : [],
+          daily_rate: bed?.daily_rate?.toString() || '0',
+          department_name: bed?.departments?.name || 'Unknown',
+          patient_id: activeAllocation?.patients?.id || null,
+          patient_name: activeAllocation?.patients?.name || null,
+          patient_hospital_id: activeAllocation?.patients?.patient_id || null,
+          admission_date: activeAllocation?.admission_date || null,
+          discharge_date: activeAllocation?.discharge_date || null,
+        };
+      }) || [];
+
+      setBeds(transformedBeds);
+    } catch (error) {
+      console.error('Error fetching bed data:', error);
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage = JSON.stringify(error);
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      setError(`Failed to load bed data: ${errorMessage}`);
+      
+      // Set empty data on error to prevent undefined state
+      setBeds([]);
+      setStats({
+        totalBeds: 0,
+        occupiedBeds: 0,
+        availableBeds: 0,
+        maintenanceBeds: 0,
+        icuBeds: 0,
+        generalBeds: 0,
+        occupancyRate: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBedData();
+  }, []);
+
+  // Filter beds based on search and filter criteria
+  const filteredBeds = beds.filter(bed => {
+    const matchesSearch = searchTerm === '' || 
+      bed.bed_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bed.department_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (bed.patient_name && bed.patient_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesWard = selectedWard === 'All Wards' || 
+      bed.department_name.toLowerCase().includes(selectedWard.toLowerCase());
+    
+    const matchesStatus = selectedStatus === 'All Status' || 
+      bed.status.toLowerCase() === selectedStatus.toLowerCase();
+    
+    return matchesSearch && matchesWard && matchesStatus;
+  });
+
+  const handleAssignBed = (bed: BedData) => {
+    setSelectedBed(bed);
+    setShowAssignModal(true);
+  };
+
+  const handleDischargeBed = (bed: BedData) => {
+    setSelectedBed(bed);
+    setShowDischargeModal(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading bed data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-md">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={fetchBedData}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bed Management</h1>
-          <p className="text-gray-500 mt-1">Monitor bed occupancy and patient assignments</p>
+          <p className="text-gray-600 mt-1">Monitor and manage hospital bed allocations</p>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
-            <UserPlus size={16} className="mr-2" />
-            Assign Patient
-          </button>
-          <button className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md">
-            <Plus size={16} className="mr-2" />
-            Add Bed
-          </button>
-        </div>
+        <button className="mt-4 sm:mt-0 bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-orange-700 transition-colors flex items-center">
+          <Plus size={16} className="mr-2" />
+          Add New Bed
+        </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Beds</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">120</p>
-              <div className="flex items-center mt-2">
-                <Building className="h-3 w-3 text-blue-500 mr-1" />
-                <span className="text-sm font-medium text-blue-600">20 ICU, 100 General</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-pink-600 rounded-xl flex items-center justify-center">
-              <Bed className="text-white" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Occupied</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">104</p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-600">87% occupancy</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-              <Users className="text-white" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Available</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">16</p>
-              <div className="flex items-center mt-2">
-                <CheckCircle className="h-3 w-3 text-blue-500 mr-1" />
-                <span className="text-sm font-medium text-blue-600">Ready for admission</span>
-              </div>
+              <p className="text-sm font-medium text-gray-600">Total Beds</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalBeds}</p>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <CheckCircle className="text-white" size={20} />
+              <Bed className="h-6 w-6 text-white" />
             </div>
+          </div>
+          <div className="flex items-center mt-4 text-sm">
+            <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+            <span className="text-green-600 font-medium">+2.5%</span>
+            <span className="text-gray-500 ml-1">vs last month</span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
-    <div>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Maintenance</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">0</p>
-              <div className="flex items-center mt-2">
-                <Activity className="h-3 w-3 text-gray-500 mr-1" />
-                <span className="text-sm font-medium text-gray-600">All operational</span>
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Occupied</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.occupiedBeds}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl flex items-center justify-center">
-              <Activity className="text-white" size={20} />
+            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
+              <Users className="h-6 w-6 text-white" />
             </div>
+          </div>
+          <div className="flex items-center mt-4 text-sm">
+            <span className="text-red-600 font-medium">{stats.occupancyRate}%</span>
+            <span className="text-gray-500 ml-1">occupancy rate</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Available</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.availableBeds}</p>
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-white" />
+            </div>
+          </div>
+          <div className="flex items-center mt-4 text-sm">
+            <span className="text-green-600 font-medium">{Math.round((stats.availableBeds / stats.totalBeds) * 100)}%</span>
+            <span className="text-gray-500 ml-1">availability</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Maintenance</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.maintenanceBeds}</p>
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
+              <Building className="h-6 w-6 text-white" />
+            </div>
+          </div>
+          <div className="flex items-center mt-4 text-sm">
+            <Activity className="h-4 w-4 text-yellow-500 mr-1" />
+            <span className="text-yellow-600 font-medium">Under repair</span>
           </div>
         </div>
       </div>
@@ -115,6 +341,8 @@ export default function BedsPage() {
             <input
               type="text"
               placeholder="Search beds by number, ward, or patient..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
@@ -123,7 +351,10 @@ export default function BedsPage() {
               <Filter size={16} className="mr-2" />
               Filter
             </button>
-            <select className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select 
+              value={selectedWard}
+              onChange={(e) => setSelectedWard(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
               <option>All Wards</option>
               <option>ICU</option>
               <option>General Ward</option>
@@ -131,7 +362,10 @@ export default function BedsPage() {
               <option>Maternity</option>
               <option>Pediatrics</option>
             </select>
-            <select className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select 
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
               <option>All Status</option>
               <option>Occupied</option>
               <option>Available</option>
@@ -142,275 +376,122 @@ export default function BedsPage() {
         </div>
       </div>
 
-      {/* Bed Grid */}
+      {/* Beds Grid - Dynamic rendering based on actual data */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* ICU Bed Card */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                ICU
-              </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">ICU Bed 001</h3>
-                <p className="text-sm text-gray-500">Intensive Care Unit</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                Occupied
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between">
+        {filteredBeds.map((bed) => (
+          <div key={bed.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-start justify-between mb-4">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                  MR
+                <div className={`w-12 h-12 ${getBedGradient(bed.bed_type)} rounded-xl flex items-center justify-center text-white font-bold text-sm`}>
+                  {bed.bed_number}
                 </div>
-                <div className="ml-2">
-                  <p className="font-medium text-gray-900 text-sm">Michael Rodriguez</p>
-                  <p className="text-xs text-gray-500">PAT002</p>
+                <div className="ml-3">
+                  <h3 className="font-semibold text-gray-900">{bed.bed_type.charAt(0).toUpperCase() + bed.bed_type.slice(1)} Bed {bed.bed_number}</h3>
+                  <p className="text-sm text-gray-500">{bed.department_name} • Room {bed.room_number}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Heart className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-medium text-red-600">Critical</span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getBedStatusColor(bed.status)}`}>
+                  {bed.status.charAt(0).toUpperCase() + bed.status.slice(1)}
+                </span>
+                <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                  <MoreVertical size={16} className="text-gray-500" />
+                </button>
               </div>
             </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Admitted:</span>
-              <span className="font-medium text-gray-900">3 days ago</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Attending:</span>
-              <span className="font-medium text-gray-900">Dr. Amit Singh</span>
-            </div>
-          </div>
 
-          <div className="bg-red-50 rounded-xl p-3 mb-4 border border-red-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-red-700">Patient Status</p>
-              <span className="text-xs text-red-600">Under Monitoring</span>
-            </div>
-            <p className="text-sm text-red-900">Vital signs stable, recovery in progress</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-gray-50 text-gray-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">
-              <UserMinus size={14} className="mr-1" />
-              Discharge
-            </button>
-          </div>
-        </div>
-
-        {/* General Ward Bed Card - Occupied */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                G01
+            {bed.status === 'occupied' && bed.patient_name ? (
+              // Occupied bed with patient info
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      {getPatientInitials(bed.patient_name)}
+                    </div>
+                    <div className="ml-2">
+                      <p className="font-medium text-gray-900 text-sm">{bed.patient_name}</p>
+                      <p className="text-xs text-gray-500">{bed.patient_hospital_id}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-sm font-medium text-green-600">Admitted</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Admitted:</span>
+                  <span className="font-medium text-gray-900">{formatDate(bed.admission_date || '')}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Daily Rate:</span>
+                  <span className="font-medium text-gray-900">₹{bed.daily_rate}</span>
+                </div>
               </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">General Bed 001</h3>
-                <p className="text-sm text-gray-500">General Ward</p>
+            ) : (
+              // Available bed
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <CheckCircle className="h-12 w-12 text-blue-500 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-gray-900">
+                      {bed.status === 'available' ? 'Ready for Admission' : 'Under Maintenance'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {bed.status === 'available' ? 'Cleaned and sanitized' : 'Maintenance in progress'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Daily Rate:</span>
+                  <span className="font-medium text-gray-900">₹{bed.daily_rate}</span>
+                </div>
               </div>
+            )}
+
+            <div className={`${getBedStatusBg(bed.status)} rounded-xl p-3 mb-4`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`text-xs font-medium ${getBedStatusTextColor(bed.status)}`}>Bed Status</p>
+                <span className={`text-xs ${getBedStatusAccentColor(bed.status)}`}>
+                  {bed.status.charAt(0).toUpperCase() + bed.status.slice(1)}
+                </span>
+              </div>
+              <p className={`text-sm ${getBedStatusDarkColor(bed.status)}`}>
+                {bed.status === 'occupied' ? 'Patient currently admitted' : 
+                 bed.status === 'available' ? 'Available for immediate assignment' : 
+                 'Under maintenance - not available'}
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                Occupied
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
+
+            <div className="flex gap-2">
+              <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
+                <Eye size={14} className="mr-1" />
+                View
               </button>
+              {bed.status === 'occupied' ? (
+                <button 
+                  onClick={() => handleDischargeBed(bed)}
+                  className="flex-1 flex items-center justify-center bg-gray-50 text-gray-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">
+                  <UserMinus size={14} className="mr-1" />
+                  Discharge
+                </button>
+              ) : bed.status === 'available' ? (
+                <button 
+                  onClick={() => handleAssignBed(bed)}
+                  className="flex-1 flex items-center justify-center bg-blue-50 text-blue-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors">
+                  <UserPlus size={14} className="mr-1" />
+                  Assign
+                </button>
+              ) : (
+                <button className="flex-1 flex items-center justify-center bg-yellow-50 text-yellow-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-yellow-100 transition-colors">
+                  <Calendar size={14} className="mr-1" />
+                  Schedule
+                </button>
+              )}
             </div>
           </div>
-
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                  SJ
-                </div>
-                <div className="ml-2">
-                  <p className="font-medium text-gray-900 text-sm">Sarah Johnson</p>
-                  <p className="text-xs text-gray-500">PAT001</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-sm font-medium text-green-600">Stable</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Admitted:</span>
-              <span className="font-medium text-gray-900">2 days ago</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Attending:</span>
-              <span className="font-medium text-gray-900">Dr. Priya Sharma</span>
-            </div>
-          </div>
-
-          <div className="bg-green-50 rounded-xl p-3 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-green-700">Patient Status</p>
-              <span className="text-xs text-green-600">Recovering</span>
-            </div>
-            <p className="text-sm text-green-900">Post-operative recovery, discharge tomorrow</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-gray-50 text-gray-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">
-              <UserMinus size={14} className="mr-1" />
-              Discharge
-            </button>
-          </div>
-        </div>
-
-        {/* Available Bed Card */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                G02
-              </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">General Bed 002</h3>
-                <p className="text-sm text-gray-500">General Ward</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                Available
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <CheckCircle className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-                <p className="text-sm font-medium text-gray-900">Ready for Admission</p>
-                <p className="text-xs text-gray-500">Cleaned and sanitized</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Last Occupied:</span>
-              <span className="font-medium text-gray-900">Yesterday</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Maintenance:</span>
-              <span className="font-medium text-green-600">Up to date</span>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 rounded-xl p-3 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-blue-700">Bed Status</p>
-              <span className="text-xs text-blue-600">Ready</span>
-            </div>
-            <p className="text-sm text-blue-900">Available for immediate assignment</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-blue-50 text-blue-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors">
-              <UserPlus size={14} className="mr-1" />
-              Assign
-            </button>
-          </div>
-        </div>
-
-        {/* Pediatric Bed Card */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                P01
-              </div>
-              <div className="ml-3">
-                <h3 className="font-semibold text-gray-900">Pediatric Bed 001</h3>
-                <p className="text-sm text-gray-500">Pediatrics Ward</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                Occupied
-              </span>
-              <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                  EW
-                </div>
-                <div className="ml-2">
-                  <p className="font-medium text-gray-900 text-sm">Emma Watson</p>
-                  <p className="text-xs text-gray-500">PAT003 • Age 14</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-sm font-medium text-green-600">Stable</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Admitted:</span>
-              <span className="font-medium text-gray-900">Today</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Attending:</span>
-              <span className="font-medium text-gray-900">Dr. Rajesh Kumar</span>
-            </div>
-          </div>
-
-          <div className="bg-purple-50 rounded-xl p-3 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-purple-700">Patient Status</p>
-              <span className="text-xs text-purple-600">Observation</span>
-            </div>
-            <p className="text-sm text-purple-900">Routine check-up, awaiting test results</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center bg-orange-50 text-orange-600 py-2 px-3 rounded-xl text-sm font-medium hover:bg-orange-100 transition-colors">
-              <Eye size={14} className="mr-1" />
-              View
-            </button>
-            <button className="flex-1 flex items-center justify-center bg-gray-50 text-gray-700 py-2 px-3 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">
-              <Calendar size={14} className="mr-1" />
-              Schedule
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Load More */}
@@ -422,3 +503,112 @@ export default function BedsPage() {
     </div>
   );
 }
+
+const getBedGradient = (bedType: string) => {
+  switch (bedType.toLowerCase()) {
+    case 'icu':
+      return 'bg-gradient-to-r from-red-500 to-red-600';
+    case 'general':
+      return 'bg-gradient-to-r from-blue-500 to-blue-600';
+    case 'emergency':
+      return 'bg-gradient-to-r from-orange-500 to-orange-600';
+    case 'maternity':
+      return 'bg-gradient-to-r from-pink-500 to-pink-600';
+    case 'pediatrics':
+      return 'bg-gradient-to-r from-purple-500 to-purple-600';
+    default:
+      return 'bg-gradient-to-r from-gray-500 to-gray-600';
+  }
+};
+
+const getBedStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'occupied':
+      return 'bg-red-100 text-red-800';
+    case 'available':
+      return 'bg-green-100 text-green-800';
+    case 'maintenance':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'cleaning':
+      return 'bg-blue-100 text-blue-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getBedStatusBg = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'occupied':
+      return 'bg-red-50';
+    case 'available':
+      return 'bg-green-50';
+    case 'maintenance':
+      return 'bg-yellow-50';
+    case 'cleaning':
+      return 'bg-blue-50';
+    default:
+      return 'bg-gray-50';
+  }
+};
+
+const getBedStatusTextColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'occupied':
+      return 'text-red-600';
+    case 'available':
+      return 'text-green-600';
+    case 'maintenance':
+      return 'text-yellow-600';
+    case 'cleaning':
+      return 'text-blue-600';
+    default:
+      return 'text-gray-600';
+  }
+};
+
+const getBedStatusAccentColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'occupied':
+      return 'text-red-500';
+    case 'available':
+      return 'text-green-500';
+    case 'maintenance':
+      return 'text-yellow-500';
+    case 'cleaning':
+      return 'text-blue-500';
+    default:
+      return 'text-gray-500';
+  }
+};
+
+const getBedStatusDarkColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'occupied':
+      return 'text-red-700';
+    case 'available':
+      return 'text-green-700';
+    case 'maintenance':
+      return 'text-yellow-700';
+    case 'cleaning':
+      return 'text-blue-700';
+    default:
+      return 'text-gray-700';
+  }
+};
+
+const getPatientInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  
+  const date = new Date(dateString);
+  
+  return date.toLocaleDateString();
+};
