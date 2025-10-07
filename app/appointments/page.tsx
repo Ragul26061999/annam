@@ -17,10 +17,15 @@ import {
   Phone,
   Stethoscope,
   Loader2,
-  Hash
+  Hash,
+  FileText,
+  DollarSign
 } from 'lucide-react';
 import ModernAppointmentBooking from '../../components/ModernAppointmentBooking';
+import ClinicalEntryForm from '../../components/ClinicalEntryForm';
+import AppointmentDetailsModal from '../../components/AppointmentDetailsModal';
 import { getAppointments, updateAppointmentStatus, getAppointmentStats, type Appointment } from '../../src/lib/appointmentService';
+import { createAppointmentBill } from '../../src/lib/billingService';
 
 interface AppointmentStats {
   total: number;
@@ -33,6 +38,9 @@ interface AppointmentStats {
 
 export default function AppointmentsPage() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isClinicalFormOpen, setIsClinicalFormOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stats, setStats] = useState<AppointmentStats>({
     total: 0,
@@ -48,6 +56,7 @@ export default function AppointmentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [completingAppointment, setCompletingAppointment] = useState<string | null>(null);
 
   const handleAppointmentSuccess = (appointment: Appointment) => {
     console.log('Appointment created:', appointment);
@@ -96,6 +105,57 @@ export default function AppointmentsPage() {
     } finally {
       setUpdatingStatus(null);
     }
+  };
+
+  const handleCompleteAppointment = async (appointment: Appointment) => {
+    try {
+      setCompletingAppointment(appointment.id);
+      
+      // Create bill for the appointment
+      await createAppointmentBill(
+        appointment.id,
+        appointment.patient_id,
+        appointment.doctor_id,
+        appointment.encounter?.id
+      );
+      
+      // Update appointment status to completed
+      await updateAppointmentStatus(appointment.id, 'completed');
+      
+      // Refresh appointments and stats
+      await fetchAppointments();
+      await fetchStats();
+      
+      // Show success message
+      setError(null);
+      alert('Appointment completed and bill generated successfully!');
+    } catch (error: any) {
+      console.error('Error completing appointment:', error);
+      setError(error.message || 'Failed to complete appointment. Please try again.');
+    } finally {
+      setCompletingAppointment(null);
+    }
+  };
+
+  const handleOpenClinicalForm = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsClinicalFormOpen(true);
+  };
+
+  const handleClinicalFormSuccess = () => {
+    setIsClinicalFormOpen(false);
+    setSelectedAppointment(null);
+    fetchAppointments();
+  };
+
+  const handlePatientClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleDetailsModalClose = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedAppointment(null);
   };
 
   const extractTokenNumber = (notes: string | null): string => {
@@ -327,59 +387,70 @@ export default function AppointmentsPage() {
                 <div key={appointment.id} className="p-5 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 bg-gradient-to-r ${getTimeColor(appointment.status)} rounded-xl flex items-center justify-center`}>
-                        <span className="text-white font-semibold text-sm">{patientInitials}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="font-semibold text-gray-900">{patientName}</h3>
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
-                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                          </span>
-                          {tokenNumber !== 'N/A' && (
-                            <span className="flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                              <Hash size={12} className="mr-1" />
-                              {tokenNumber}
-                            </span>
-                          )}
+                      <button
+                        onClick={() => handlePatientClick(appointment)}
+                        className="flex items-center space-x-4 hover:bg-blue-50 rounded-lg p-2 transition-colors cursor-pointer"
+                        title="Click to view patient details"
+                      >
+                        <div className={`w-12 h-12 bg-gradient-to-r ${getTimeColor(appointment.status)} rounded-xl flex items-center justify-center`}>
+                          <span className="text-white font-semibold text-sm">{patientInitials}</span>
                         </div>
-                        <div className="flex items-center space-x-4 mt-1 flex-wrap">
-                          <span className="text-sm text-gray-600 flex items-center">
-                            <Clock size={14} className="mr-1" />
-                            {new Date(appointment.appointment_date).toLocaleDateString()} • {appointment.appointment_time}
-                          </span>
-                          <span className="text-sm text-gray-600 flex items-center">
-                            <User size={14} className="mr-1" />
-                            {doctorName}
-                          </span>
-                          {appointment.chief_complaint && (
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center space-x-3">
+                            <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors">{patientName}</h3>
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
+                              {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                            </span>
+                            {tokenNumber !== 'N/A' && (
+                              <span className="flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                                <Hash size={12} className="mr-1" />
+                                {tokenNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-4 mt-1 flex-wrap">
                             <span className="text-sm text-gray-600 flex items-center">
-                              <span className="mr-1">•</span>
-                              {appointment.chief_complaint}
+                              <Clock size={14} className="mr-1" />
+                              {new Date(appointment.appointment_date).toLocaleDateString()} • {appointment.appointment_time}
                             </span>
-                          )}
+                            <span className="text-sm text-gray-600 flex items-center">
+                              <User size={14} className="mr-1" />
+                              {doctorName}
+                            </span>
+                            {appointment.chief_complaint && (
+                              <span className="text-sm text-gray-600 flex items-center">
+                                <span className="mr-1">•</span>
+                                {appointment.chief_complaint}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      </button>
                     </div>
                     <div className="flex items-center space-x-2">
                       {appointment.status === 'scheduled' && (
                         <>
                           <button
-                            onClick={() => handleStatusUpdate(appointment.id, 'completed')}
-                            disabled={updatingStatus === appointment.id || !isWithinAppointmentSession(appointment.appointment_date, appointment.appointment_time)}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                              isWithinAppointmentSession(appointment.appointment_date, appointment.appointment_time)
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            } disabled:opacity-50`}
-                            title={!isWithinAppointmentSession(appointment.appointment_date, appointment.appointment_time) 
-                              ? 'Complete button is only active during appointment session (15 min before to 30 min after)' 
-                              : 'Mark appointment as completed'}
+                            onClick={() => handleOpenClinicalForm(appointment)}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                            title="Open clinical entry form"
                           >
-                            {updatingStatus === appointment.id ? (
+                            <FileText size={14} />
+                            <span>Entry Form</span>
+                          </button>
+                          <button
+                            onClick={() => handleCompleteAppointment(appointment)}
+                            disabled={completingAppointment === appointment.id}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                            title="Complete appointment and generate bill"
+                          >
+                            {completingAppointment === appointment.id ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              'Complete'
+                              <>
+                                <DollarSign size={14} />
+                                <span>Complete</span>
+                              </>
                             )}
                           </button>
                           <button
@@ -423,6 +494,32 @@ export default function AppointmentsPage() {
              onSuccess={handleAppointmentSuccess}
            />
         </div>
+      )}
+
+      {/* Clinical Entry Form */}
+      {isClinicalFormOpen && selectedAppointment && (
+        <ClinicalEntryForm
+          isOpen={isClinicalFormOpen}
+          onClose={() => {
+            setIsClinicalFormOpen(false);
+            setSelectedAppointment(null);
+          }}
+          appointmentId={selectedAppointment.id}
+          encounterId={selectedAppointment.encounter?.id || ''}
+          patientId={selectedAppointment.patient_id}
+          doctorId={selectedAppointment.doctor_id}
+          patientName={selectedAppointment.patient?.name || 'Unknown Patient'}
+          onSuccess={handleClinicalFormSuccess}
+        />
+      )}
+
+      {/* Appointment Details Modal */}
+      {isDetailsModalOpen && selectedAppointment && (
+        <AppointmentDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={handleDetailsModalClose}
+          appointmentId={selectedAppointment.id}
+        />
       )}
     </div>
   );

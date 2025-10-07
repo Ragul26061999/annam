@@ -314,7 +314,7 @@ const PharmacyManagement: React.FC<PharmacyManagementProps> = ({ userId, userRol
                   <div>
                     <p className="font-medium text-gray-900">{medication.name}</p>
                     <p className="text-sm text-gray-600">
-                      Current Stock: {medication.stock_quantity} | Minimum: {medication.minimum_stock_level}
+                      Current Stock: {medication.available_stock} | Minimum: {medication.minimum_stock_level}
                     </p>
                   </div>
                   <button
@@ -428,19 +428,19 @@ const PharmacyManagement: React.FC<PharmacyManagementProps> = ({ userId, userRol
                     {medication.category}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{medication.stock_quantity}</div>
+                    <div className="text-sm text-gray-900">{medication.available_stock}</div>
                     <div className="text-sm text-gray-500">Min: {medication.minimum_stock_level}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{medication.unit_price}
+                    ₹{medication.selling_price}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      medication.stock_quantity <= medication.minimum_stock_level
+                      medication.available_stock <= medication.minimum_stock_level
                         ? 'bg-red-100 text-red-800'
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {medication.stock_quantity <= medication.minimum_stock_level ? 'Low Stock' : 'In Stock'}
+                      {medication.available_stock <= medication.minimum_stock_level ? 'Low Stock' : 'In Stock'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -806,7 +806,7 @@ const PharmacyManagement: React.FC<PharmacyManagementProps> = ({ userId, userRol
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Current Stock: {selectedMedication?.stock_quantity}
+                    Current Stock: {selectedMedication?.available_stock}
                   </label>
                 </div>
                 <div>

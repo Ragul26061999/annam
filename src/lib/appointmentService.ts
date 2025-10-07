@@ -357,6 +357,12 @@ export interface Appointment {
       email: string;
     };
   };
+  encounter?: {
+    id: string;
+    patient_id: string;
+    clinician_id: string;
+    start_at: string;
+  };
 }
 
 export interface AppointmentSlot {
@@ -621,7 +627,7 @@ export async function getAppointments(options: {
       }
 
       // Fetch doctor data separately
-      let doctorData = null;
+      let doctorData: Appointment['doctor'] = undefined;
       if (apt.encounter?.clinician_id) {
         const { data: doctor } = await supabase
           .from('doctors')
@@ -633,7 +639,21 @@ export async function getAppointments(options: {
           `)
           .eq('id', apt.encounter.clinician_id)
           .single();
-        doctorData = doctor;
+        
+        if (doctor && doctor.user) {
+          const userArray = Array.isArray(doctor.user) ? doctor.user : [doctor.user];
+          const firstUser = userArray[0];
+          doctorData = {
+            id: doctor.id,
+            specialization: doctor.specialization,
+            qualification: doctor.qualification,
+            user: {
+              name: firstUser?.name || '',
+              phone: firstUser?.phone || '',
+              email: firstUser?.email || ''
+            }
+          };
+        }
       }
 
       return {
@@ -660,7 +680,8 @@ export async function getAppointments(options: {
         
         // Related data
         patient: patientData,
-        doctor: doctorData
+        doctor: doctorData,
+        encounter: apt.encounter
       };
     }));
 
@@ -704,6 +725,142 @@ export async function getAppointmentById(appointmentId: string): Promise<Appoint
     return appointment;
   } catch (error) {
     console.error('Error fetching appointment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get comprehensive appointment details including patient vitals and medical history
+ */
+export async function getAppointmentDetails(appointmentId: string): Promise<{
+  appointment: Appointment;
+  vitals: any[];
+  medicalHistory: any[];
+  latestVitals: any | null;
+}> {
+  try {
+    // Get appointment details using the new database structure
+    const { data: appointment, error: appointmentError } = await supabase
+      .from('appointment')
+      .select(`
+        *,
+        encounter:encounter(
+          id,
+          patient_id,
+          clinician_id,
+          start_at
+        )
+      `)
+      .eq('id', appointmentId)
+      .single();
+
+    if (appointmentError) {
+      console.error('Error fetching appointment:', appointmentError);
+      throw new Error(`Appointment not found: ${appointmentError.message}`);
+    }
+
+    if (!appointment || !appointment.encounter) {
+      throw new Error('Appointment or encounter not found');
+    }
+
+    // Fetch patient data
+    const { data: patient } = await supabase
+      .from('patients')
+      .select('id, patient_id, name, phone, email, date_of_birth, gender, address')
+      .eq('id', appointment.encounter.patient_id)
+      .single();
+
+    // Fetch doctor data
+    const { data: doctor } = await supabase
+      .from('doctors')
+      .select(`
+        id,
+        specialization,
+        qualification,
+        user:users(name, phone, email)
+      `)
+      .eq('id', appointment.encounter.clinician_id)
+      .single();
+
+    // Transform appointment to match expected format
+    const transformedAppointment: Appointment = {
+      id: appointment.id,
+      appointment_id: `APT-${appointment.id.slice(0, 8)}`,
+      patient_id: appointment.encounter.patient_id,
+      doctor_id: appointment.encounter.clinician_id,
+      appointment_date: appointment.scheduled_at ? new Date(appointment.scheduled_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      appointment_time: appointment.scheduled_at ? new Date(appointment.scheduled_at).toTimeString().split(' ')[0] : '00:00:00',
+      duration_minutes: appointment.duration_minutes || 30,
+      type: 'Consultation',
+      status: 'scheduled' as 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled',
+      symptoms: undefined,
+      chief_complaint: undefined,
+      diagnosis: undefined,
+      treatment_plan: undefined,
+      prescriptions: [],
+      next_appointment_date: undefined,
+      follow_up_instructions: undefined,
+      notes: undefined,
+      created_by: undefined,
+      created_at: appointment.created_at,
+      updated_at: appointment.updated_at,
+      patient: patient,
+      doctor: doctor && doctor.user ? {
+        id: doctor.id,
+        specialization: doctor.specialization,
+        qualification: doctor.qualification,
+        user: Array.isArray(doctor.user) ? doctor.user[0] : doctor.user
+      } : undefined,
+      encounter: appointment.encounter
+    };
+
+    // Fetch patient vitals
+    let vitals: any[] = [];
+    let latestVitals: any | null = null;
+    
+    if (patient?.id) {
+      try {
+        const { data: vitalsData } = await supabase
+          .from('vitals')
+          .select('*')
+          .eq('patient_id', patient.id)
+          .order('recorded_at', { ascending: false })
+          .limit(10);
+
+        vitals = vitalsData || [];
+        latestVitals = vitals.length > 0 ? vitals[0] : null;
+      } catch (vitalsError) {
+        console.warn('Could not fetch vitals:', vitalsError);
+      }
+    }
+
+    // Fetch medical history
+    let medicalHistory: any[] = [];
+    
+    if (patient?.id) {
+      try {
+        // Try to fetch from medical_history table
+        const { data: historyData } = await supabase
+          .from('medical_history')
+          .select('*')
+          .eq('patient_id', patient.id)
+          .order('event_date', { ascending: false })
+          .limit(10);
+
+        medicalHistory = historyData || [];
+      } catch (historyError) {
+        console.warn('Could not fetch medical history:', historyError);
+      }
+    }
+
+    return {
+      appointment: transformedAppointment,
+      vitals,
+      medicalHistory,
+      latestVitals
+    };
+  } catch (error) {
+    console.error('Error fetching appointment details:', error);
     throw error;
   }
 }
