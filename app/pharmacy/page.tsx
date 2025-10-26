@@ -25,9 +25,7 @@ import {
   getPharmacyBills 
 } from '@/src/lib/pharmacyService'
 import MedicineEntryForm from '@/src/components/MedicineEntryForm'
-import InventoryPage from './inventory/page'
-import PharmacyBillingPage from './billing/page'
-import NewBillingPage from './newbilling/page'
+// Do not import page modules for embedding; navigate to their routes instead
 
 interface Medicine {
   id: string
@@ -480,19 +478,37 @@ export default function PharmacyPage() {
 
       {activeTab === 'newbilling' && (
         <div className="space-y-6">
-          <NewBillingPage embedded />
+          <div className="bg-white rounded-xl border p-6 text-center">
+            <p className="mb-4 text-gray-700">Open the New Billing flow in its dedicated page.</p>
+            <Link href="/pharmacy/newbilling" className="btn-primary inline-flex items-center">
+              <Receipt className="w-4 h-4 mr-2" />
+              Go to New Billing
+            </Link>
+          </div>
         </div>
       )}
 
       {activeTab === 'inventory' && (
         <div className="space-y-6">
-          <InventoryPage embedded />
+          <div className="bg-white rounded-xl border p-6 text-center">
+            <p className="mb-4 text-gray-700">Open the Inventory view in its dedicated page.</p>
+            <Link href="/pharmacy/inventory" className="btn-primary inline-flex items-center">
+              <Package className="w-4 h-4 mr-2" />
+              Go to Inventory
+            </Link>
+          </div>
         </div>
       )}
 
       {activeTab === 'billing' && (
         <div className="space-y-6">
-          <PharmacyBillingPage embedded />
+          <div className="bg-white rounded-xl border p-6 text-center">
+            <p className="mb-4 text-gray-700">Open the Billing History in its dedicated page.</p>
+            <Link href="/pharmacy/billing" className="btn-primary inline-flex items-center">
+              <IndianRupee className="w-4 h-4 mr-2" />
+              Go to Billing History
+            </Link>
+          </div>
         </div>
       )}
       {showMedicineModal && (

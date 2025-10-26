@@ -64,7 +64,7 @@ interface BillTotals {
   totalAmount: number;
 }
 
-export default function NewBillingPage({ embedded = false }: { embedded?: boolean }) {
+export default function NewBillingPage() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [billItems, setBillItems] = useState<BillItem[]>([]);
@@ -99,6 +99,7 @@ export default function NewBillingPage({ embedded = false }: { embedded?: boolea
     gstNumber: 'GST29ABCDE1234F1Z5',
     contactNumber: '+91-9876543210'
   });
+  const embedded = false;
 
   // Utility: get QR image URL for given data
   const getQrUrl = (data: string, size: number = 200) => {

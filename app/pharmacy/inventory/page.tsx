@@ -55,7 +55,7 @@ interface NewBatch {
   notes: string
 }
 
-export default function InventoryPage({ embedded = false }: { embedded?: boolean }) {
+export default function InventoryPage() {
   const [medicines, setMedicines] = useState<Medicine[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -98,6 +98,7 @@ export default function InventoryPage({ embedded = false }: { embedded?: boolean
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [batchStatsMap, setBatchStatsMap] = useState<Record<string, { remainingUnits: number; soldUnitsThisMonth: number; purchasedUnitsThisMonth: number }>>({})
+  const embedded = false
 
   const categories = ['Analgesic', 'Antibiotic', 'Antacid', 'Vitamin', 'Antiseptic', 'Other']
   const units = ['tablets', 'capsules', 'ml', 'mg', 'bottles', 'tubes', 'sachets']

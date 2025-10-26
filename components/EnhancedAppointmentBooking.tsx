@@ -102,7 +102,11 @@ export default function EnhancedAppointmentBooking({ onClose, onSuccess }: {
         .order('users(name)');
       
       if (error) throw error;
-      setDoctors(data || []);
+      const normalized = (data || []).map((d: any) => ({
+        ...d,
+        users: Array.isArray(d?.users) ? (d.users[0] || { name: '' }) : d.users,
+      }));
+      setDoctors(normalized as Doctor[]);
     } catch (error) {
       console.error('Error loading doctors:', error);
     }

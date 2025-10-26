@@ -64,8 +64,12 @@ export default function AppointmentSuccessPage({
         .eq('id', appointment.encounter.clinician_id)
         .single();
 
+      const doctorName = Array.isArray((doctor as any)?.users)
+        ? (doctor as any)?.users?.[0]?.name
+        : (doctor as any)?.users?.name;
+
       setAppointmentDetails({
-        doctorName: doctor?.users?.name || 'Unknown Doctor',
+        doctorName: doctorName || 'Unknown Doctor',
         appointmentDate: appointment.scheduled_at.split('T')[0],
         appointmentTime: appointment.scheduled_at.split('T')[1].substring(0, 5),
         appointmentType: appointment.appointment_type || 'consultation',

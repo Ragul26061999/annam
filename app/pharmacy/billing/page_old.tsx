@@ -125,8 +125,6 @@ export default function PharmacyBillingPage() {
         .reduce((sum, bill) => sum + bill.total_amount, 0)
       
       setDashboardStats({
-        totalMedications: 0, // Not needed for billing
-        lowStockCount: 0, // Not needed for billing
         todaysSales: todaysCollection,
         pendingOrders: pendingDue,
         monthlyCollection: monthlyCollection,
@@ -255,11 +253,12 @@ export default function PharmacyBillingPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={() => setShowCreateBillModal(true)}
-            className="btn-primary flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
+          <Link href="/pharmacy/newbilling">
+            <button className="btn-primary flex items-center">
+              <Plus className="w-4 h-4 mr-2" />
+              New Bill
+            </button>
+          </Link>
           <div>
             <div className="text-2xl font-bold">{filteredBills.length}</div>
             <p className="text-xs text-gray-500">All time records</p>
@@ -365,13 +364,13 @@ export default function PharmacyBillingPage() {
                   <h3 className="text-lg font-semibold">Bill #{bill.id.slice(-8)}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <User className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">{bill.patient_name}</span>
+                    <span className="text-sm text-gray-600">{bill.customer_name}</span>
                   </div>
-                  <p className="text-xs text-gray-500">ID: {bill.patient_id}</p>
+                  <p className="text-xs text-gray-500">UHID: {bill.patient_uhid}</p>
                 </div>
                 <div className="flex flex-col gap-1 items-end">
-                  <span className={getStatusBadgeClass(bill.status)}>
-                    {bill.status.charAt(0).toUpperCase() + bill.status.slice(1)}
+                  <span className={getStatusBadgeClass(bill.payment_status)}>
+                    {bill.payment_status.charAt(0).toUpperCase() + bill.payment_status.slice(1)}
                   </span>
                   <div className="flex items-center gap-1">
                     {getPaymentMethodIcon(bill.payment_method)}
@@ -413,14 +412,15 @@ export default function PharmacyBillingPage() {
                   <Eye className="w-3 h-3 mr-1" />
                   View
                 </button>
-                {bill.status === 'pending' && (
-                  <button 
-                    onClick={() => handleSettlePayment(bill.id)}
-                    className="bg-green-600 text-white text-sm flex-1 flex items-center justify-center px-3 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Settle
-                  </button>
+                {bill.payment_status === 'pending' && (
+                  <Link href="/pharmacy/newbilling">
+                    <button 
+                      className="bg-green-600 text-white text-sm flex-1 flex items-center justify-center px-3 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Settle
+                    </button>
+                  </Link>
                 )}
                 <button className="btn-secondary text-sm flex-1 flex items-center justify-center">
                   <Download className="w-3 h-3 mr-1" />
