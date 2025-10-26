@@ -36,7 +36,7 @@ interface DashboardStats {
   totalPayments: number
 }
 
-export default function PharmacyBillingPage({ embedded = false }: { embedded?: boolean }) {
+export default function PharmacyBillingPage() {
   const [bills, setBills] = useState<PharmacyBill[]>([])
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -44,6 +44,7 @@ export default function PharmacyBillingPage({ embedded = false }: { embedded?: b
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [paymentFilter, setPaymentFilter] = useState('all')
+  const embedded = false
 
   useEffect(() => {
     loadBillingData()
