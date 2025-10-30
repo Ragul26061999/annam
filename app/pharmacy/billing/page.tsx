@@ -137,7 +137,9 @@ export default function PharmacyBillingPage() {
         id: bill.id,
         bill_number: bill.bill_number || `#${bill.id.slice(-8)}`,
         customer_name: bill.customer_name || 'Unknown',
-        patient_uhid: patientsMap[bill.patient_id]?.patient_id || (bill.customer_type === 'patient' ? 'Unknown' : 'Walk-in'),
+        patient_uhid: bill.customer_type === 'patient'
+          ? (patientsMap[bill.patient_id]?.patient_id || 'Unknown')
+          : '',
         customer_type: bill.customer_type || 'patient',
         subtotal: bill.subtotal || 0,
         discount: bill.discount || 0,
@@ -490,7 +492,7 @@ export default function PharmacyBillingPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search bills, UHID, customer..."
+              placeholder="Search bills or customers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -557,7 +559,7 @@ export default function PharmacyBillingPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {bill.patient_uhid}
+                    {bill.patient_uhid || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                     ₹{bill.total_amount.toLocaleString()}
@@ -635,7 +637,9 @@ export default function PharmacyBillingPage() {
             </div>
             <div className="text-sm text-gray-700 mb-4 grid grid-cols-2 gap-2">
               <div><span className="font-medium">Customer:</span> {selectedBill.customer_name}</div>
-              <div><span className="font-medium">UHID:</span> {selectedBill.patient_uhid}</div>
+              {selectedBill.patient_uhid && (
+                <div><span className="font-medium">UHID:</span> {selectedBill.patient_uhid}</div>
+              )}
               <div><span className="font-medium">Date:</span> {new Date(selectedBill.created_at).toLocaleString()}</div>
               <div><span className="font-medium">Payment:</span> {selectedBill.payment_method} • {selectedBill.payment_status}</div>
             </div>

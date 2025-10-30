@@ -67,11 +67,20 @@ interface Supplier {
   phone: string;
 }
 
-const MedicineEntryForm: React.FC<{ onClose: () => void; onSuccess: () => void }> = ({
+interface MedicineEntryFormProps {
+  onClose: () => void;
+  onSuccess: () => void;
+  preselectedMedicine?: { id: string; name: string; medication_code?: string };
+  initialTab?: 'medicine' | 'batch' | 'supplier';
+}
+
+const MedicineEntryForm: React.FC<MedicineEntryFormProps> = ({
   onClose,
   onSuccess,
+  preselectedMedicine,
+  initialTab,
 }) => {
-  const [activeTab, setActiveTab] = useState<'medicine' | 'batch' | 'supplier'>('medicine');
+  const [activeTab, setActiveTab] = useState<'medicine' | 'batch' | 'supplier'>(initialTab || 'medicine');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ field: string; message: string }[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
@@ -135,6 +144,20 @@ const MedicineEntryForm: React.FC<{ onClose: () => void; onSuccess: () => void }
       loadMedicines();
     }
   }, [activeTab]);
+
+  // If a medicine is preselected (from medicine modal), lock selection and switch to Batch tab
+  useEffect(() => {
+    if (preselectedMedicine) {
+      setActiveTab('batch');
+      setBatchForm((prev) => ({ ...prev, medicine_id: preselectedMedicine.id }));
+      const label = preselectedMedicine.medication_code
+        ? `${preselectedMedicine.name} (${preselectedMedicine.medication_code})`
+        : preselectedMedicine.name;
+      setMedicineSearch(label);
+      setShowResults(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedMedicine?.id]);
 
   // Removed medicine barcode generation preview (batch barcode only)
 
@@ -336,7 +359,7 @@ const MedicineEntryForm: React.FC<{ onClose: () => void; onSuccess: () => void }
   const hasError = (field: string) => !!getErrorMessage(field);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center">
@@ -554,35 +577,49 @@ const MedicineEntryForm: React.FC<{ onClose: () => void; onSuccess: () => void }
               {/* Batch Form Content */}
               <FormSection title="Select Medicine" icon={<Package className="w-5 h-5 text-blue-600" />}>
                 <div className="space-y-2">
-                  <FormInput
-                    label="Search Medicine"
-                    value={medicineSearch}
-                    onChange={async (e) => {
-                      const q = e.target.value;
-                      setMedicineSearch(q);
-                      setShowResults(true);
-                      await searchMedicines(q);
-                    }}
-                    placeholder="Type 2+ letters of name or code"
-                  />
-                  {showResults && medicineResults.length > 0 && (
-                    <div className="border rounded-md max-h-48 overflow-auto bg-white shadow-sm">
-                      {medicineResults.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => {
-                            setBatchForm({ ...batchForm, medicine_id: m.id });
-                            setMedicineSearch(`${m.name} (${m.medication_code})`);
-                            setMedicineResults([]);
-                            setShowResults(false);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-                        >
-                          {m.name} <span className="text-gray-500">({m.medication_code})</span>
-                        </button>
-                      ))}
+                  {preselectedMedicine ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Selected Medicine</label>
+                      <div className="px-3 py-2 bg-gray-100 rounded-md text-gray-800 text-sm">
+                        {preselectedMedicine.name}
+                        {preselectedMedicine.medication_code ? (
+                          <span className="text-gray-500"> ({preselectedMedicine.medication_code})</span>
+                        ) : null}
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <FormInput
+                        label="Search Medicine"
+                        value={medicineSearch}
+                        onChange={async (e) => {
+                          const q = e.target.value;
+                          setMedicineSearch(q);
+                          setShowResults(true);
+                          await searchMedicines(q);
+                        }}
+                        placeholder="Type 2+ letters of name or code"
+                      />
+                      {showResults && medicineResults.length > 0 && (
+                        <div className="border rounded-md max-h-48 overflow-auto bg-white shadow-sm">
+                          {medicineResults.map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setBatchForm({ ...batchForm, medicine_id: m.id });
+                                setMedicineSearch(`${m.name} (${m.medication_code})`);
+                                setMedicineResults([]);
+                                setShowResults(false);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                            >
+                              {m.name} <span className="text-gray-500">({m.medication_code})</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                   {hasError('medicine_id') && (
                     <p className="text-sm text-red-600">{getErrorMessage('medicine_id')}</p>

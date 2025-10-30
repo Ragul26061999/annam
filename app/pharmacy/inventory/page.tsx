@@ -124,6 +124,38 @@ export default function InventoryPage() {
     loadMedicines()
   }, [])
 
+  // Consume deferred action from dashboard (view/edit medicine)
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return
+      const raw = localStorage.getItem('pharmacy:deferredAction')
+      if (!raw) return
+      localStorage.removeItem('pharmacy:deferredAction')
+      const action = JSON.parse(raw)
+      if (!action?.medicineId) return
+      // Find medicine after medicines state is set; if not yet loaded, poll briefly
+      const tryOpen = () => {
+        const med = medicines.find(m => m.id === action.medicineId)
+        if (!med) return false
+        if (action.type === 'view_medicine') {
+          openMedicineDetail(med)
+        } else if (action.type === 'edit_medicine') {
+          setSelectedMedicine({ ...med, total_stock: med.total_stock ?? 0, min_stock_level: med.min_stock_level ?? 0, batches: (med as any).batches || [] } as any)
+          setShowAddBatch(false)
+          setShowAddMedicine(true)
+        }
+        return true
+      }
+      // Attempt immediately, else retry after medicines load
+      if (!tryOpen()) {
+        const id = setInterval(() => {
+          if (tryOpen()) clearInterval(id)
+        }, 200)
+        setTimeout(() => clearInterval(id), 4000)
+      }
+    } catch {}
+  }, [medicines])
+
   useEffect(() => {
     // Whenever medicines (and their batches) change, fetch per-batch stats from DB
     const batchNumbers = Array.from(new Set(
@@ -1303,146 +1335,26 @@ export default function InventoryPage() {
         />
       )}
 
-      {/* Add Batch Modal */}
+      {/* Add Batch Modal (Full Form) */}
       {showAddBatch && selectedMedicine && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Add New Batch - {selectedMedicine.name}</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Batch Number *
-                </label>
-                <input
-                  type="text"
-                  value={newBatch.batch_number}
-                  onChange={(e) => setNewBatch({...newBatch, batch_number: e.target.value})}
-                  className="input"
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Manufacturing Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={newBatch.manufacturing_date}
-                    onChange={(e) => setNewBatch({...newBatch, manufacturing_date: e.target.value})}
-                    className="input"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={newBatch.expiry_date}
-                    onChange={(e) => setNewBatch({...newBatch, expiry_date: e.target.value})}
-                    className="input"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    value={newBatch.quantity}
-                    onChange={(e) => setNewBatch({...newBatch, quantity: parseInt(e.target.value)})}
-                    className="input"
-                    min="0"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit Cost (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={newBatch.unit_cost}
-                    onChange={(e) => setNewBatch({...newBatch, unit_cost: parseFloat(e.target.value)})}
-                    className="input"
-                    min="0"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Selling Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={newBatch.selling_price}
-                    onChange={(e) => setNewBatch({...newBatch, selling_price: parseFloat(e.target.value)})}
-                    className="input"
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Supplier *
-                </label>
-                <input
-                  type="text"
-                  value={newBatch.supplier}
-                  onChange={(e) => setNewBatch({...newBatch, supplier: e.target.value})}
-                  className="input"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  value={newBatch.notes}
-                  onChange={(e) => setNewBatch({...newBatch, notes: e.target.value})}
-                  className="input"
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => {
-                  setShowAddBatch(false)
-                  setSelectedMedicine(null)
-                }}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddBatch}
-                className="btn-primary"
-                disabled={loading || !newBatch.batch_number || !newBatch.manufacturing_date || !newBatch.expiry_date || !newBatch.supplier}
-              >
-                {loading ? 'Adding...' : 'Add Batch'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <MedicineEntryForm
+          preselectedMedicine={{
+            id: selectedMedicine.id,
+            name: selectedMedicine.name,
+            medication_code: selectedMedicine.medication_code,
+          }}
+          initialTab="batch"
+          onClose={() => {
+            setShowAddBatch(false)
+            setSelectedMedicine(null)
+          }}
+          onSuccess={() => {
+            setShowAddBatch(false)
+            setSelectedMedicine(null)
+            // Refresh data to reflect new batch
+            window.location.reload()
+          }}
+        />
       )}
 
       {/* Batch Purchase History Modal */}
@@ -1623,6 +1535,17 @@ export default function InventoryPage() {
                   )}
                 </div>
                 
+                {/* Actions on right: Add Batch + Close */}
+                <button
+                  onClick={() => {
+                    setSelectedMedicine(selectedMedicineDetail)
+                    setShowAddBatch(true)
+                  }}
+                  className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Batch
+                </button>
                 <button
                   onClick={() => {
                     setShowMedicineDetail(false)
@@ -1649,6 +1572,18 @@ export default function InventoryPage() {
                   <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-lg mb-2">No batches available</p>
                   <p className="text-sm">Add the first batch to start tracking inventory</p>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => {
+                        setSelectedMedicine(selectedMedicineDetail)
+                        setShowAddBatch(true)
+                      }}
+                      className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors inline-flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Batch
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

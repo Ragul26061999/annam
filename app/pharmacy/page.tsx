@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   Search, 
   Plus, 
@@ -57,6 +58,7 @@ interface DashboardStats {
 }
 
 export default function PharmacyPage() {
+  const router = useRouter()
   const [medicines, setMedicines] = useState<Medicine[]>([])
   const [bills, setBills] = useState<PharmacyBill[]>([])
   const [stats, setStats] = useState<DashboardStats>({
@@ -71,6 +73,8 @@ export default function PharmacyPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showMedicineModal, setShowMedicineModal] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null)
 
   useEffect(() => {
     loadData()
@@ -395,11 +399,23 @@ export default function PharmacyPage() {
                         )}
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <button className="btn-secondary text-sm flex-1 flex items-center justify-center">
+                        <button
+                          className="btn-secondary text-sm flex-1 flex items-center justify-center"
+                          onClick={() => {
+                            setSelectedMedicine(medicine)
+                            setShowViewModal(true)
+                          }}
+                        >
                           <Eye className="w-3 h-3 mr-1" />
                           View
                         </button>
-                        <button className="btn-secondary text-sm flex-1 flex items-center justify-center">
+                        <button
+                          className="btn-secondary text-sm flex-1 flex items-center justify-center"
+                          onClick={() => {
+                            setSelectedMedicine(medicine)
+                            setShowMedicineModal(true)
+                          }}
+                        >
                           <Edit className="w-3 h-3 mr-1" />
                           Edit
                         </button>
@@ -515,12 +531,55 @@ export default function PharmacyPage() {
       )}
       {showMedicineModal && (
         <MedicineEntryForm
+          preselectedMedicine={selectedMedicine ? { id: selectedMedicine.id, name: selectedMedicine.name, medication_code: selectedMedicine.medicine_code } : undefined}
+          initialTab={selectedMedicine ? 'batch' : undefined}
           onClose={() => setShowMedicineModal(false)}
           onSuccess={async () => {
             setShowMedicineModal(false)
             await loadData()
           }}
         />
+      )}
+
+      {/* Lightweight Medicine View Modal */}
+      {showViewModal && selectedMedicine && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold">{selectedMedicine.name}</h3>
+                <p className="text-slate-300 text-sm">{selectedMedicine.category}</p>
+              </div>
+              <button onClick={() => setShowViewModal(false)} className="hover:bg-white/20 rounded-full p-2">
+                <Eye className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-gray-600">Code</span><span className="font-medium">{selectedMedicine.medicine_code || 'N/A'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Manufacturer</span><span className="font-medium">{selectedMedicine.manufacturer || 'N/A'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Category</span><span className="font-medium">{selectedMedicine.category || 'N/A'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Stock</span><span className="font-medium">{selectedMedicine.stock_quantity} units</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Price</span><span className="font-medium">₹{selectedMedicine.unit_price}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Batch</span><span className="font-medium">{selectedMedicine.batch_number || '—'}</span></div>
+              {selectedMedicine.expiry_date && (
+                <div className="flex justify-between"><span className="text-gray-600">Expiry</span><span className="font-medium">{new Date(selectedMedicine.expiry_date).toLocaleDateString()}</span></div>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              <button onClick={() => setShowViewModal(false)} className="btn-secondary">Close</button>
+              <button
+                onClick={() => {
+                  setShowViewModal(false)
+                  setSelectedMedicine(selectedMedicine)
+                  setShowMedicineModal(true)
+                }}
+                className="btn-primary"
+              >
+                + Batch
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
