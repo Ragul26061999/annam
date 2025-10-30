@@ -25,6 +25,9 @@ interface PharmacyBill {
   customer_name: string
   patient_uhid: string
   customer_type: string
+  subtotal: number
+  discount: number
+  tax: number
   total_amount: number
   payment_method: string
   payment_status: string
@@ -51,9 +54,35 @@ export default function PharmacyBillingPage() {
   const [newPaymentMethod, setNewPaymentMethod] = useState('')
   const [updatingPayment, setUpdatingPayment] = useState(false)
   const embedded = false
+  // View modal state
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [viewItems, setViewItems] = useState<any[]>([])
+  const [viewLoading, setViewLoading] = useState(false)
+  // Hospital settings
+  const [hospital, setHospital] = useState({
+    name: 'ANNAM PHARMACY',
+    department: 'Pharmacy Department',
+    address: '2/301, Raj Kanna Nagar, Veerapandian Patanam, Tiruchendur - 628002',
+    contact_number: 'Ph.No: 04639-252592',
+    gst_number: 'GST29ABCDE1234F1Z5'
+  })
 
   useEffect(() => {
     loadBillingData()
+    ;(async () => {
+      try {
+        const { data } = await supabase.from('hospital_settings').select('*').eq('id', 1).maybeSingle()
+        if (data) {
+          setHospital({
+            name: data.name,
+            department: data.department,
+            address: data.address,
+            contact_number: data.contact_number,
+            gst_number: data.gst_number
+          })
+        }
+      } catch {}
+    })()
   }, [])
 
   const loadBillingData = async () => {
@@ -110,6 +139,9 @@ export default function PharmacyBillingPage() {
         customer_name: bill.customer_name || 'Unknown',
         patient_uhid: patientsMap[bill.patient_id]?.patient_id || (bill.customer_type === 'patient' ? 'Unknown' : 'Walk-in'),
         customer_type: bill.customer_type || 'patient',
+        subtotal: bill.subtotal || 0,
+        discount: bill.discount || 0,
+        tax: bill.tax || 0,
         total_amount: bill.total || 0,
         payment_method: bill.payment_method || 'cash',
         payment_status: bill.payment_status || 'completed',
@@ -181,6 +213,120 @@ export default function PharmacyBillingPage() {
     setSelectedBill(bill)
     setNewPaymentMethod(bill.payment_method)
     setShowPaymentEditModal(true)
+  }
+
+  const openViewBill = async (bill: PharmacyBill) => {
+    setSelectedBill(bill)
+    setShowViewModal(true)
+    setViewLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('billing_item')
+        .select('*')
+        .eq('billing_id', bill.id)
+      if (error) throw error
+      setViewItems(data || [])
+    } catch (e) {
+      console.error('Failed to load bill items', e)
+      setViewItems([])
+    } finally {
+      setViewLoading(false)
+    }
+  }
+
+  const printBill = () => {
+    if (!selectedBill) return
+    const itemsHtml = viewItems.map((it: any, idx: number) => `
+      <tr style="border-bottom:1px solid #e5e7eb">
+        <td style="padding:6px">${idx + 1}</td>
+        <td style="padding:6px">
+          <div style="font-weight:500">${it.description || ''}</div>
+        </td>
+        <td style="padding:6px;text-align:center">${it.qty}</td>
+        <td class="amount-cell" style="padding:6px;text-align:right;padding-right:4mm">₹${Number(it.total_amount || 0).toFixed(2)}</td>
+      </tr>
+    `).join('')
+    const subtotal = selectedBill.subtotal ?? viewItems.reduce((s: number, it: any) => s + Number(it.total_amount || 0), 0)
+    const discount = selectedBill.discount || 0
+    const tax = selectedBill.tax ?? Math.max(selectedBill.total_amount - (subtotal - discount), 0)
+    const w = window.open('', 'printwin')
+    if (!w) return
+    w.document.write(`
+      <html>
+        <head>
+          <title>Bill ${selectedBill.bill_number}</title>
+          <style>
+            @page{margin:5mm}
+            body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:#111827}
+            table{border-collapse:collapse;width:100%}
+            .invoice-header{line-height:1.3;margin-bottom:6px;text-align:center}
+            .bill-info td{word-break:break-all}
+            .amount-cell{text-align:right;padding-right:4mm}
+            .label{font-weight:400;color:#333}
+            .value{font-weight:600}
+            .totals{page-break-inside:avoid;margin-bottom:5mm;border-top:2px solid #d1d5db;padding-top:8px}
+            .invoice-footer{position:relative;margin-top:10mm;text-align:center;font-size:10pt}
+            th{padding:6px;text-align:left}
+          </style>
+        </head>
+        <body>
+          <div class="invoice-header">
+            <h2 style="margin:0;font-size:22px;font-weight:700">${hospital.name}</h2>
+            <div>${hospital.department}</div>
+            <div style="font-size:12px;color:#4b5563">${hospital.address}</div>
+            <div style="font-size:12px;color:#4b5563">${hospital.contact_number}</div>
+            <div style="font-size:12px;color:#6b7280">GST No: ${hospital.gst_number}</div>
+            <div style="margin-top:2px;font-weight:600">INVOICE</div>
+          </div>
+
+          <table class="bill-info" style="margin-bottom:8px;font-size:14px">
+            <tr>
+              <td><strong>Bill No:</strong> ${selectedBill.bill_number}</td>
+              <td><strong>To:</strong> ${selectedBill.customer_name}</td>
+            </tr>
+            <tr>
+              <td><strong>Date:</strong> ${new Date(selectedBill.created_at).toLocaleString()}</td>
+              <td><strong>Sales Type:</strong> ${(selectedBill.payment_method === 'credit' ? 'CREDIT' : 'CASH')}</td>
+            </tr>
+          </table>
+
+          <table style="font-size:14px;margin-bottom:10px">
+            <thead>
+              <tr style="border-bottom:2px solid #d1d5db">
+                <th style="padding:6px;width:40px">S.No</th>
+                <th style="padding:6px">Drug Name</th>
+                <th style="padding:6px;text-align:center">Qty</th>
+                <th style="padding:6px;text-align:right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+
+          <div class="totals" style="font-size:14px">
+            <div style="display:flex;justify-content:space-between"><span class="label">Taxable Amt</span><span class="value">₹${subtotal.toFixed(2)}</span></div>
+            ${discount > 0 ? `<div style="display:flex;justify-content:space-between"><span class="label">Disc Amt</span><span class="value">-₹${discount.toFixed(2)}</span></div>` : ''}
+            <div style="display:flex;justify-content:space-between"><span class="label">CGST Amt</span><span class="value">₹${(tax/2).toFixed(2)}</span></div>
+            <div style="display:flex;justify-content:space-between"><span class="label">SGST Amt</span><span class="value">₹${(tax/2).toFixed(2)}</span></div>
+            <div style="display:flex;justify-content:space-between;font-weight:600;border-top:1px solid #e5e7eb;padding-top:6px"><span>Total Net Amt</span><span>₹${selectedBill.total_amount.toFixed(2)}</span></div>
+          </div>
+
+          <div class="invoice-footer">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end">
+              <div>
+                <div>Printed Date: ${new Date().toLocaleDateString()}</div>
+                <div>Printed Time: ${new Date().toLocaleTimeString()}</div>
+              </div>
+              <div>
+                <div style="height:40px"></div>
+                <div style="border-top:1px solid #d1d5db;padding-top:4px">Pharmacist Signature</div>
+              </div>
+            </div>
+          </div>
+          <script>window.onload=() => {window.print(); setTimeout(()=>window.close(), 300);}</script>
+        </body>
+      </html>
+    `)
+    w.document.close()
   }
 
   const handleUpdatePaymentMethod = async () => {
@@ -400,7 +546,7 @@ export default function PharmacyBillingPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredBills.map((bill) => (
-                <tr key={bill.id} className="hover:bg-gray-50">
+                <tr key={bill.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => openViewBill(bill)}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {bill.bill_number}
                   </td>
@@ -432,14 +578,14 @@ export default function PharmacyBillingPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-800">
+                      <button className="text-blue-600 hover:text-blue-800" onClick={(e) => { e.stopPropagation(); openViewBill(bill) }} title="View Bill">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-800">
+                      <button className="text-green-600 hover:text-green-800" onClick={(e) => { e.stopPropagation(); (async () => { await openViewBill(bill); setTimeout(() => printBill(), 150); })(); }} title="Download / Print">
                         <Download className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => handleEditPaymentMethod(bill)}
+                        onClick={(e) => { e.stopPropagation(); handleEditPaymentMethod(bill) }}
                         className="text-purple-600 hover:text-purple-800"
                         title="Edit Payment Method"
                       >
@@ -447,7 +593,7 @@ export default function PharmacyBillingPage() {
                       </button>
                       {bill.payment_status === 'pending' && (
                         <button 
-                          onClick={() => handleSettlePayment(bill.id)}
+                          onClick={(e) => { e.stopPropagation(); handleSettlePayment(bill.id) }}
                           className="text-orange-600 hover:text-orange-800"
                           title="Settle Payment"
                         >
@@ -474,6 +620,62 @@ export default function PharmacyBillingPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
+      {/* Bill View Modal */}
+      {showViewModal && selectedBill && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowViewModal(false)}>
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Bill {selectedBill.bill_number}</h3>
+              <button className="text-gray-400 hover:text-gray-600" onClick={() => setShowViewModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="text-sm text-gray-700 mb-4 grid grid-cols-2 gap-2">
+              <div><span className="font-medium">Customer:</span> {selectedBill.customer_name}</div>
+              <div><span className="font-medium">UHID:</span> {selectedBill.patient_uhid}</div>
+              <div><span className="font-medium">Date:</span> {new Date(selectedBill.created_at).toLocaleString()}</div>
+              <div><span className="font-medium">Payment:</span> {selectedBill.payment_method} • {selectedBill.payment_status}</div>
+            </div>
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-3 py-2 border-b">Item</th>
+                    <th className="px-3 py-2 border-b">Qty</th>
+                    <th className="text-right px-3 py-2 border-b">Rate</th>
+                    <th className="text-right px-3 py-2 border-b">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewLoading ? (
+                    <tr><td className="px-3 py-3 text-center" colSpan={4}>Loading items...</td></tr>
+                  ) : viewItems.length === 0 ? (
+                    <tr><td className="px-3 py-3 text-center" colSpan={4}>No items</td></tr>
+                  ) : (
+                    viewItems.map((it: any, i: number) => (
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="px-3 py-2">{it.description}</td>
+                        <td className="px-3 py-2 text-center">{it.qty}</td>
+                        <td className="px-3 py-2 text-right">₹{Number(it.unit_amount || 0).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right">₹{Number(it.total_amount || 0).toFixed(2)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex justify-between items-center">
+              <div className="text-gray-600 text-sm">Total</div>
+              <div className="font-semibold text-lg">₹{selectedBill.total_amount.toLocaleString()}</div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button onClick={printBill} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Download / Print</button>
+              <button onClick={() => setShowViewModal(false)} className="px-4 py-2 border rounded-lg">Close</button>
+            </div>
+          </div>
         </div>
       )}
 
