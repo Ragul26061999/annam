@@ -30,6 +30,32 @@ export interface Medication {
   updated_at: string;
 }
 
+// =====================================================
+// BATCH HELPERS (MCP)
+// =====================================================
+
+// Returns total received quantity for a given batch by summing purchase transactions.
+export async function getBatchReceivedTotal(batchNumber: string): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('stock_transactions')
+      .select('quantity')
+      .eq('batch_number', batchNumber)
+      .eq('transaction_type', 'purchase');
+
+    if (error) {
+      console.error('Error fetching batch received total:', error);
+      return 0;
+    }
+
+    const total = (data || []).reduce((sum: number, r: any) => sum + (Number(r.quantity) || 0), 0);
+    return Math.max(0, total);
+  } catch (e) {
+    console.error('Error in getBatchReceivedTotal:', e);
+    return 0;
+  }
+}
+
 export interface StockTransaction {
   id: string;
   medication_id: string;
@@ -485,8 +511,10 @@ export async function getPharmacyDashboardStats(): Promise<{
 
     const lowStockCount = lowStockData?.length || 0;
 
-    // Get today's sales
+    // Get today's sales - include payments collected today regardless of bill date
     const today = new Date().toISOString().split('T')[0];
+    
+    // Get sales from stock transactions (immediate sales)
     const { data: todaySalesData } = await supabase
       .from('stock_transactions')
       .select('total_amount')
@@ -494,7 +522,19 @@ export async function getPharmacyDashboardStats(): Promise<{
       .gte('created_at', `${today}T00:00:00`)
       .lt('created_at', `${today}T23:59:59`);
 
-    const todaySales = todaySalesData?.reduce((sum, transaction) => sum + transaction.total_amount, 0) || 0;
+    const stockSales = todaySalesData?.reduce((sum, transaction) => sum + (transaction.total_amount || 0), 0) || 0;
+    
+    // Get payments collected today (regardless of original bill date)
+    const { data: todayPaymentsData } = await supabase
+      .from('billing')
+      .select('total_amount')
+      .eq('payment_status', 'completed')
+      .gte('updated_at', `${today}T00:00:00`)
+      .lt('updated_at', `${today}T23:59:59`);
+
+    const paymentsCollected = todayPaymentsData?.reduce((sum, bill) => sum + (bill.total_amount || 0), 0) || 0;
+    
+    const todaySales = stockSales + paymentsCollected;
 
     // Get pending bills count (align with 'billing')
     const { count: pendingBills } = await supabase
@@ -1710,9 +1750,9 @@ export async function getBatchStockStats(batchNumber: string): Promise<{
     }
 
     return {
-      remainingUnits,
-      soldUnitsThisMonth,
-      purchasedUnitsThisMonth
+      remainingUnits: Math.max(0, remainingUnits),
+      soldUnitsThisMonth: Math.max(0, soldUnitsThisMonth),
+      purchasedUnitsThisMonth: Math.max(0, purchasedUnitsThisMonth)
     };
   } catch (error) {
     console.error('Error in getBatchStockStats:', error);
@@ -1724,6 +1764,7 @@ export async function getBatchStockStats(batchNumber: string): Promise<{
     };
   }
 }
+
 
 // =====================================================
 // PRESCRIPTION DISPENSING FUNCTIONS
@@ -1791,5 +1832,289 @@ export async function dispensePrescription(
   } catch (error) {
     console.error('Error in dispensePrescription:', error);
     throw error;
+  }
+}
+
+// =====================================================
+// COMPREHENSIVE BATCH AND MEDICINE ANALYTICS
+// =====================================================
+
+export interface ComprehensiveMedicineData {
+  medication_info: {
+    id: string;
+    name: string;
+    generic_name: string;
+    manufacturer: string;
+    category: string;
+    dosage_form: string;
+    strength: string;
+    medication_code: string;
+  };
+  stock_summary: {
+    total_stock: number;
+    total_batches: number;
+    total_cost_value: number;
+    total_retail_value: number;
+    expired_stock: number;
+    expiring_soon_stock: number;
+    low_stock_batches: number;
+    out_of_stock_batches: number;
+  };
+  batches: Array<{
+    id: string;
+    batch_number: string;
+    supplier_name: string;
+    manufacturing_date: string;
+    expiry_date: string;
+    received_date: string;
+    current_stock: number;
+    original_quantity: number;
+    purchase_price: number;
+    selling_price: number;
+    cost_value: number;
+    retail_value: number;
+    sold_quantity: number;
+    status: string;
+    days_to_expiry: number;
+  }>;
+  purchase_history: Array<{
+    id: string;
+    batch_number: string;
+    quantity: number;
+    unit_price: number;
+    total_amount: number;
+    supplier_name: string;
+    purchase_date: string;
+    notes: string;
+  }>;
+  sales_history: Array<{
+    id: string;
+    batch_number: string;
+    quantity: number;
+    unit_price: number;
+    total_amount: number;
+    sale_date: string;
+    bill_number: string;
+    patient_name: string;
+  }>;
+}
+
+export async function getComprehensiveMedicineData(medicationId: string): Promise<ComprehensiveMedicineData | null> {
+  try {
+    // Get medication basic info
+    const { data: medicationInfo, error: medError } = await supabase
+      .from('medications')
+      .select(`
+        id, name, generic_name, manufacturer, category, 
+        dosage_form, strength, medication_code
+      `)
+      .eq('id', medicationId)
+      .single();
+
+    if (medError || !medicationInfo) {
+      console.error('Error fetching medication info:', medError);
+      return null;
+    }
+
+    // Get all batches - start with simplest approach
+    let batchesData: any[] = [];
+    let batchError = null;
+
+    try {
+      // Start with the most basic query
+      const { data: basicBatches, error: basicError } = await supabase
+        .from('medicine_batches')
+        .select('*')
+        .eq('medicine_id', medicationId);
+
+      if (basicError) {
+        console.error('Basic batch query failed:', basicError);
+        batchError = basicError;
+      } else if (basicBatches) {
+        batchesData = basicBatches;
+      } else {
+        batchesData = [];
+      }
+
+      // If basic query works, try to get supplier info separately
+      if (batchesData.length > 0 && !batchError) {
+        try {
+          const supplierIds = [...new Set(batchesData.map(b => b.supplier_id).filter(id => id))];
+          if (supplierIds.length > 0) {
+            const { data: suppliers, error: supplierError } = await supabase
+              .from('suppliers')
+              .select('id, name')
+              .in('id', supplierIds);
+            
+            if (!supplierError && suppliers) {
+              // Merge supplier data
+              batchesData = batchesData.map(batch => {
+                const supplier = suppliers.find(s => s.id === batch.supplier_id);
+                return {
+                  ...batch,
+                  suppliers: supplier ? { name: supplier.name } : null
+                };
+              });
+            }
+          }
+        } catch (supplierError) {
+          console.log('Supplier fetch failed, continuing without supplier data:', supplierError);
+        }
+      }
+    } catch (error) {
+      console.error('Complete error in batch fetching:', error);
+      batchError = error;
+    }
+
+    if (batchError) {
+      console.error('Final batch error:', batchError);
+      // Continue with empty batches instead of returning null
+      batchesData = [];
+    }
+
+    // Get purchase history - simplified approach
+    let purchaseHistory: any[] = [];
+    try {
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('stock_transactions')
+        .select('*')
+        .eq('medication_id', medicationId)
+        .eq('transaction_type', 'purchase')
+        .order('created_at', { ascending: false });
+
+      if (purchaseError) {
+        console.error('Purchase history query failed:', purchaseError);
+      } else if (purchaseData) {
+        purchaseHistory = purchaseData;
+      }
+    } catch (error) {
+      console.error('Error fetching purchase history:', error);
+    }
+
+    // Get sales history - simplified approach
+    let salesHistory: any[] = [];
+    try {
+      const { data: salesData, error: salesError } = await supabase
+        .from('stock_transactions')
+        .select('*')
+        .eq('medication_id', medicationId)
+        .eq('transaction_type', 'sale')
+        .order('created_at', { ascending: false });
+
+      if (salesError) {
+        console.error('Sales history query failed:', salesError);
+      } else if (salesData) {
+        salesHistory = salesData;
+      }
+    } catch (error) {
+      console.error('Error fetching sales history:', error);
+    }
+
+    // Process batches data
+    const processedBatches = (batchesData || []).map(batch => {
+      const currentStock = Math.max(0, batch.current_quantity || 0);
+      const originalQuantity = batch.original_quantity || 0;
+      const purchasePrice = batch.purchase_price || 0;
+      const sellingPrice = batch.selling_price || 0;
+      const soldQuantity = Math.max(0, originalQuantity - currentStock);
+      
+      const expiryDate = new Date(batch.expiry_date);
+      const today = new Date();
+      const daysToExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        id: batch.id,
+        batch_number: batch.batch_number,
+        supplier_name: (batch.suppliers as any)?.name || (batch.supplier_id ? `Supplier-${batch.supplier_id}` : 'Unknown'),
+        manufacturing_date: batch.manufacturing_date,
+        expiry_date: batch.expiry_date,
+        received_date: batch.received_date,
+        current_stock: currentStock,
+        original_quantity: originalQuantity,
+        purchase_price: purchasePrice,
+        selling_price: sellingPrice,
+        cost_value: currentStock * purchasePrice,
+        retail_value: currentStock * sellingPrice,
+        sold_quantity: soldQuantity,
+        status: batch.status || 'active',
+        days_to_expiry: daysToExpiry
+      };
+    });
+
+    // Calculate stock summary
+    const totalStock = processedBatches.reduce((sum, batch) => sum + batch.current_stock, 0);
+    const totalBatches = processedBatches.length;
+    const totalCostValue = processedBatches.reduce((sum, batch) => sum + batch.cost_value, 0);
+    const totalRetailValue = processedBatches.reduce((sum, batch) => sum + batch.retail_value, 0);
+    
+    const expiredStock = processedBatches
+      .filter(batch => batch.days_to_expiry < 0)
+      .reduce((sum, batch) => sum + batch.current_stock, 0);
+    
+    const expiringSoonStock = processedBatches
+      .filter(batch => batch.days_to_expiry >= 0 && batch.days_to_expiry <= 90)
+      .reduce((sum, batch) => sum + batch.current_stock, 0);
+    
+    const lowStockBatches = processedBatches.filter(batch => 
+      batch.current_stock > 0 && batch.current_stock <= 10
+    ).length;
+    
+    const outOfStockBatches = processedBatches.filter(batch => 
+      batch.current_stock <= 0
+    ).length;
+
+    // Process purchase history
+    const processedPurchaseHistory = (purchaseHistory || []).map(purchase => ({
+      id: purchase.id,
+      batch_number: purchase.batch_number || '',
+      quantity: purchase.quantity || 0,
+      unit_price: purchase.unit_price || 0,
+      total_amount: purchase.total_amount || 0,
+      supplier_name: (purchase.suppliers as any)?.name || (purchase.supplier_id ? `Supplier-${purchase.supplier_id}` : 'Unknown'),
+      purchase_date: purchase.created_at,
+      notes: purchase.notes || ''
+    }));
+
+    // Process sales history
+    const processedSalesHistory = (salesHistory || []).map(sale => ({
+      id: sale.id,
+      batch_number: sale.batch_number || '',
+      quantity: Math.abs(sale.quantity || 0),
+      unit_price: sale.unit_price || 0,
+      total_amount: sale.total_amount || 0,
+      sale_date: sale.created_at,
+      bill_number: (sale.pharmacy_bills as any)?.bill_number || (sale.reference_id || ''),
+      patient_name: (sale.pharmacy_bills as any)?.patient_name || 'Walk-in'
+    }));
+
+    return {
+      medication_info: {
+        id: medicationInfo.id,
+        name: medicationInfo.name,
+        generic_name: medicationInfo.generic_name || '',
+        manufacturer: medicationInfo.manufacturer || '',
+        category: medicationInfo.category || '',
+        dosage_form: medicationInfo.dosage_form || '',
+        strength: medicationInfo.strength || '',
+        medication_code: medicationInfo.medication_code || ''
+      },
+      stock_summary: {
+        total_stock: totalStock,
+        total_batches: totalBatches,
+        total_cost_value: totalCostValue,
+        total_retail_value: totalRetailValue,
+        expired_stock: expiredStock,
+        expiring_soon_stock: expiringSoonStock,
+        low_stock_batches: lowStockBatches,
+        out_of_stock_batches: outOfStockBatches
+      },
+      batches: processedBatches,
+      purchase_history: processedPurchaseHistory,
+      sales_history: processedSalesHistory
+    };
+
+  } catch (error) {
+    console.error('Error in getComprehensiveMedicineData:', error);
+    return null;
   }
 }

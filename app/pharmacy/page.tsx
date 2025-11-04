@@ -18,12 +18,21 @@ import {
   FileText,
   Users,
   Receipt,
-  BarChart3
+  BarChart3,
+  History,
+  RefreshCw,
+  X
 } from 'lucide-react'
 import { 
   getPharmacyDashboardStats, 
   getMedications, 
-  getPharmacyBills 
+  getPharmacyBills,
+  getMedicineStockSummary,
+  getStockTruth,
+  getBatchPurchaseHistory,
+  getMedicationStockRobust,
+  getBatchStockRobust,
+  getComprehensiveMedicineData
 } from '@/src/lib/pharmacyService'
 import MedicineEntryForm from '@/src/components/MedicineEntryForm'
 // Do not import page modules for embedding; navigate to their routes instead
@@ -75,6 +84,11 @@ export default function PharmacyPage() {
   const [showMedicineModal, setShowMedicineModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [detailSummary, setDetailSummary] = useState<any | null>(null)
+  const [detailHistory, setDetailHistory] = useState<any[]>([])
+  const [comprehensiveData, setComprehensiveData] = useState<any | null>(null)
 
   useEffect(() => {
     loadData()
@@ -296,12 +310,12 @@ export default function PharmacyPage() {
 
             <div className="card">
               <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Pending Orders</h3>
+                <h3 className="text-sm font-medium">Pending Payments</h3>
                 <ShoppingCart className="h-4 w-4 text-blue-500" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-600">{stats.pendingOrders}</div>
-                <p className="text-xs text-gray-500">Awaiting processing</p>
+                <p className="text-xs text-gray-500">Awaiting payment</p>
               </div>
             </div>
           </div>
@@ -401,9 +415,62 @@ export default function PharmacyPage() {
                       <div className="flex gap-2 mt-4">
                         <button
                           className="btn-secondary text-sm flex-1 flex items-center justify-center"
-                          onClick={() => {
+                          onClick={async () => {
                             setSelectedMedicine(medicine)
-                            setShowViewModal(true)
+                            setShowDetailModal(true)
+                            setLoadingDetail(true)
+                            try {
+                              // Load comprehensive medicine data using MCP
+                              const comprehensiveData = await getComprehensiveMedicineData(medicine.id)
+                              
+                              if (comprehensiveData) {
+                                setComprehensiveData(comprehensiveData)
+                                
+                                const convertedSummary = {
+                                  medication_id: comprehensiveData.medication_info.id,
+                                  total_quantity: comprehensiveData.stock_summary.total_stock,
+                                  total_batches: comprehensiveData.stock_summary.total_batches,
+                                  total_retail_value: comprehensiveData.stock_summary.total_retail_value,
+                                  total_cost_value: comprehensiveData.stock_summary.total_cost_value,
+                                  expired_quantity: comprehensiveData.stock_summary.expired_stock,
+                                  expiring_soon_quantity: comprehensiveData.stock_summary.expiring_soon_stock,
+                                  low_stock_batches: comprehensiveData.stock_summary.low_stock_batches,
+                                  out_of_stock_batches: comprehensiveData.stock_summary.out_of_stock_batches
+                                }
+                                setDetailSummary(convertedSummary)
+                                
+                                // Set purchase history from comprehensive data
+                                setDetailHistory(comprehensiveData.purchase_history.slice(0, 10))
+                              } else {
+                                // Fallback to robust functions
+                                const [robustSummary, stockTruth] = await Promise.all([
+                                  getMedicationStockRobust(medicine.id),
+                                  getStockTruth(medicine.id)
+                                ])
+                                
+                                if (robustSummary) {
+                                  const convertedSummary = {
+                                    medication_id: robustSummary.medication_id,
+                                    total_quantity: Math.max(0, robustSummary.current_stock || 0),
+                                    total_batches: Math.max(0, robustSummary.total_batches || 0),
+                                    total_retail_value: 0,
+                                    total_cost_value: 0,
+                                    expired_quantity: Math.max(0, robustSummary.expired_units || 0),
+                                    expiring_soon_quantity: 0,
+                                    low_stock_batches: 0,
+                                    out_of_stock_batches: 0
+                                  }
+                                  setDetailSummary(convertedSummary)
+                                }
+                                setDetailHistory([])
+                              }
+                            } catch (e) {
+                              console.error('detail load failed', e)
+                              setDetailSummary(null)
+                              setDetailHistory([])
+                            } finally {
+                              setLoadingDetail(false)
+                            }
                           }}
                         >
                           <Eye className="w-3 h-3 mr-1" />
@@ -577,6 +644,170 @@ export default function PharmacyPage() {
               >
                 + Batch
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Medicine modal similar to inventory */}
+      {showDetailModal && selectedMedicine && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 shadow-lg flex items-start justify-between">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2">{selectedMedicine.name}</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
+                  <div><div className="text-slate-300 text-xs">Code</div><div className="font-semibold">{selectedMedicine.medicine_code || 'N/A'}</div></div>
+                  <div><div className="text-slate-300 text-xs">Category</div><div className="font-semibold">{selectedMedicine.category}</div></div>
+                  <div><div className="text-slate-300 text-xs">Manufacturer</div><div className="font-semibold">{selectedMedicine.manufacturer || 'N/A'}</div></div>
+                  <div><div className="text-slate-300 text-xs">Price</div><div className="font-semibold">₹{selectedMedicine.unit_price}</div></div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false)
+                    setSelectedMedicine(selectedMedicine)
+                    setShowMedicineModal(true)
+                  }}
+                  className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Batch
+                </button>
+                <button onClick={() => setShowDetailModal(false)} className="text-white hover:bg-white/20 rounded-full p-2">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(95vh-180px)]">
+              {loadingDetail ? (
+                <div className="text-center py-12">Loading medicine details...</div>
+              ) : (
+                <>
+                  {!detailSummary ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg mb-2">No batches available</p>
+                      <p className="text-sm">Add the first batch to start tracking inventory</p>
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            setShowDetailModal(false)
+                            setSelectedMedicine(selectedMedicine)
+                            setShowMedicineModal(true)
+                          }}
+                          className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors inline-flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Batch
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3">Stock Summary</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Total Stock</div>
+                            <div className="text-2xl font-bold text-blue-800">{detailSummary.total_quantity || 0}</div>
+                            <div className="text-xs text-blue-500 mt-1">Units available</div>
+                          </div>
+                          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                            <div className="text-xs text-green-600 font-medium uppercase tracking-wide">Total Batches</div>
+                            <div className="text-2xl font-bold text-green-800">{detailSummary.total_batches || 0}</div>
+                            <div className="text-xs text-green-500 mt-1">Active batches</div>
+                          </div>
+                          <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                            <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">Retail Value</div>
+                            <div className="text-2xl font-bold text-purple-800">₹{(detailSummary.total_retail_value || 0).toLocaleString()}</div>
+                            <div className="text-xs text-purple-500 mt-1">Current inventory value</div>
+                          </div>
+                          <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                            <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">Cost Value</div>
+                            <div className="text-2xl font-bold text-orange-800">₹{(detailSummary.total_cost_value || 0).toLocaleString()}</div>
+                            <div className="text-xs text-orange-500 mt-1">Investment value</div>
+                          </div>
+                          {detailSummary.expired_quantity > 0 && (
+                            <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                              <div className="text-xs text-red-600 font-medium uppercase tracking-wide">Expired Stock</div>
+                              <div className="text-2xl font-bold text-red-800">{detailSummary.expired_quantity}</div>
+                              <div className="text-xs text-red-500 mt-1">Needs attention</div>
+                            </div>
+                          )}
+                          {detailSummary.expiring_soon_quantity > 0 && (
+                            <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                              <div className="text-xs text-yellow-600 font-medium uppercase tracking-wide">Expiring Soon</div>
+                              <div className="text-2xl font-bold text-yellow-800">{detailSummary.expiring_soon_quantity}</div>
+                              <div className="text-xs text-yellow-500 mt-1">Within 90 days</div>
+                            </div>
+                          )}
+                          {detailSummary.low_stock_batches > 0 && (
+                            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                              <div className="text-xs text-amber-600 font-medium uppercase tracking-wide">Low Stock Batches</div>
+                              <div className="text-2xl font-bold text-amber-800">{detailSummary.low_stock_batches}</div>
+                              <div className="text-xs text-amber-500 mt-1">Need restocking</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-lg font-semibold">Purchase History</h3>
+                          <button className="btn-secondary text-sm" onClick={async () => {
+                            // No batch specified; keep simple refresh
+                            setLoadingDetail(true)
+                            try {
+                              // We don't have a single batch; keep empty or fetch latest by service if needed
+                              setDetailHistory([])
+                            } finally { setLoadingDetail(false) }
+                          }}>
+                            <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+                          </button>
+                        </div>
+                        {detailHistory.length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <Package className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+                            <p className="text-sm">No purchase history found</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left py-2 px-3 font-medium">Date</th>
+                                  <th className="text-left py-2 px-3 font-medium">Batch</th>
+                                  <th className="text-left py-2 px-3 font-medium">Qty</th>
+                                  <th className="text-left py-2 px-3 font-medium">Rate</th>
+                                  <th className="text-left py-2 px-3 font-medium">Amount</th>
+                                  <th className="text-left py-2 px-3 font-medium">Supplier</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {detailHistory.map((h, index) => (
+                                  <tr key={h.id || index} className="border-b hover:bg-gray-50">
+                                    <td className="py-2 px-3">{new Date(h.purchase_date || h.purchased_at).toLocaleDateString()}</td>
+                                    <td className="py-2 px-3">
+                                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-mono">
+                                        {h.batch_number || 'N/A'}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3 font-medium">{h.quantity}</td>
+                                    <td className="py-2 px-3">₹{(h.unit_price || 0).toFixed(2)}</td>
+                                    <td className="py-2 px-3 font-medium text-green-600">₹{(h.total_amount || 0).toLocaleString()}</td>
+                                    <td className="py-2 px-3 text-gray-600">{h.supplier_name || 'Unknown'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import { Search, Plus, Edit, Trash2, Package, Calendar, AlertTriangle, Filter, History, Layers, Clock, Eye, Printer, Info, RefreshCw, X } from 'lucide-react'
 import StatCard from '@/components/StatCard'
-import { getBatchPurchaseHistory, getBatchStockStats, editStockTransaction, adjustExpiredStock, getBatchStockRobust, getMedicationStockRobust, getStockTruth, getMedicineStockSummary, reconcileStock } from '@/src/lib/pharmacyService'
+import { getBatchPurchaseHistory, getBatchStockStats, editStockTransaction, adjustExpiredStock, getBatchStockRobust, getMedicationStockRobust, getStockTruth, getMedicineStockSummary, reconcileStock, getComprehensiveMedicineData, getBatchReceivedTotal } from '@/src/lib/pharmacyService'
 import { supabase } from '@/src/lib/supabase'
-import type { BatchPurchaseHistoryEntry, StockTransaction, StockTruthRecord, MedicineStockSummary } from '@/src/lib/pharmacyService'
+import type { BatchPurchaseHistoryEntry, StockTransaction, StockTruthRecord, MedicineStockSummary, ComprehensiveMedicineData } from '@/src/lib/pharmacyService'
 import MedicineEntryForm from '@/src/components/MedicineEntryForm'
 
 interface MedicineBatch {
@@ -70,13 +70,18 @@ export default function InventoryPage() {
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [historyBatchNumber, setHistoryBatchNumber] = useState<string>('')
   const [historyEntries, setHistoryEntries] = useState<BatchPurchaseHistoryEntry[]>([])
+  const [salesHistoryEntries, setSalesHistoryEntries] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyTab, setHistoryTab] = useState<'purchases'|'sales'>('purchases')
   const [historyFilter, setHistoryFilter] = useState<'all' | 'this_month' | 'last_3_months'>('all')
   const [showMedicineDetail, setShowMedicineDetail] = useState(false)
   const [selectedMedicineDetail, setSelectedMedicineDetail] = useState<Medicine | null>(null)
   const [medicineStockSummary, setMedicineStockSummary] = useState<MedicineStockSummary | null>(null)
   const [batchStockTruth, setBatchStockTruth] = useState<StockTruthRecord[]>([])
+  const [receivedTotalsMap, setReceivedTotalsMap] = useState<Record<string, number>>({})
+  const [soldTotalsMap, setSoldTotalsMap] = useState<Record<string, number>>({})
   const [loadingMedicineDetail, setLoadingMedicineDetail] = useState(false)
+  const [comprehensiveMedicineData, setComprehensiveMedicineData] = useState<ComprehensiveMedicineData | null>(null)
   const [showEditBatch, setShowEditBatch] = useState(false)
   const [editingBatch, setEditingBatch] = useState<MedicineBatch | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -144,6 +149,24 @@ export default function InventoryPage() {
           setShowAddBatch(false)
           setShowAddMedicine(true)
         }
+
+  // Total units sold for this batch from MCP (stock_transactions sales)
+  const loadBatchSoldTotal = async (batchNumber: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('stock_transactions')
+        .select('quantity')
+        .eq('batch_number', batchNumber)
+        .eq('transaction_type', 'sale')
+      if (error) throw error
+      // Some schemas store sales as positive quantities; take absolute and sum
+      const total = (data || []).reduce((sum: number, r: any) => sum + Math.abs(Number(r.quantity) || 0), 0)
+      setSoldTotalsMap(prev => ({ ...prev, [batchNumber]: Math.max(0, total) }))
+    } catch {
+      setSoldTotalsMap(prev => ({ ...prev, [batchNumber]: 0 }))
+    }
+  }
+
         return true
       }
       // Attempt immediately, else retry after medicines load
@@ -212,6 +235,9 @@ export default function InventoryPage() {
           .in('id', supplierIds)
         suppliersMap = Object.fromEntries((suppliers || []).map(s => [s.id, s.name]))
       }
+
+  
+
 
       const mapped: Medicine[] = (meds || []).map((m: any) => {
         const mBatches = (batches || []).filter(b => b.medicine_id === m.id)
@@ -459,25 +485,28 @@ export default function InventoryPage() {
 
   const loadBatchStats = async (batchNumber: string) => {
     try {
-      // Use definitive stock truth system
-      const stockTruth = await getStockTruth(undefined, batchNumber)
+      // Use robust batch stock function that prevents negative values
+      const robustStats = await getBatchStockRobust(batchNumber)
       
-      if (stockTruth && stockTruth.length > 0) {
-        const batch = stockTruth[0]
+      if (robustStats) {
         setBatchStatsMap(prev => ({
           ...prev,
           [batchNumber]: {
-            remainingUnits: batch.current_quantity,
-            soldUnitsThisMonth: batch.total_sold || 0,
-            purchasedUnitsThisMonth: batch.total_purchased || 0
+            remainingUnits: Math.max(0, robustStats.current_stock || 0),
+            soldUnitsThisMonth: Math.max(0, robustStats.sold_this_month || 0),
+            purchasedUnitsThisMonth: Math.max(0, robustStats.purchased_this_month || 0)
           }
         }))
       } else {
-        // Fallback to legacy function if no truth data
+        // Fallback to legacy function if robust function fails
         const legacyStats = await getBatchStockStats(batchNumber)
         setBatchStatsMap(prev => ({
           ...prev,
-          [batchNumber]: legacyStats
+          [batchNumber]: {
+            remainingUnits: Math.max(0, legacyStats.remainingUnits),
+            soldUnitsThisMonth: Math.max(0, legacyStats.soldUnitsThisMonth),
+            purchasedUnitsThisMonth: Math.max(0, legacyStats.purchasedUnitsThisMonth)
+          }
         }))
       }
     } catch (error) {
@@ -486,6 +515,38 @@ export default function InventoryPage() {
         ...prev,
         [batchNumber]: { remainingUnits: 0, soldUnitsThisMonth: 0, purchasedUnitsThisMonth: 0 }
       }))
+    }
+  }
+
+  const loadBatchReceivedTotal = async (batchNumber: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('stock_transactions')
+        .select('quantity')
+        .eq('batch_number', batchNumber)
+        .eq('transaction_type', 'purchase')
+      if (error) throw error
+      const total = (data || []).reduce((sum: number, r: any) => sum + (Number(r.quantity) || 0), 0)
+      setReceivedTotalsMap(prev => ({ ...prev, [batchNumber]: Math.max(0, total) }))
+    } catch {
+      setReceivedTotalsMap(prev => ({ ...prev, [batchNumber]: 0 }))
+    }
+  }
+
+  // Total units sold for this batch from MCP (stock_transactions sales)
+  const loadBatchSoldTotal = async (batchNumber: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('stock_transactions')
+        .select('quantity')
+        .eq('batch_number', batchNumber)
+        .eq('transaction_type', 'sale')
+      if (error) throw error
+      // Some schemas store sales as positive quantities; take absolute and sum
+      const total = (data || []).reduce((sum: number, r: any) => sum + Math.abs(Number(r.quantity) || 0), 0)
+      setSoldTotalsMap(prev => ({ ...prev, [batchNumber]: Math.max(0, total) }))
+    } catch {
+      setSoldTotalsMap(prev => ({ ...prev, [batchNumber]: 0 }))
     }
   }
 
@@ -582,15 +643,70 @@ export default function InventoryPage() {
       setSelectedMedicineDetail(medicine)
       setShowMedicineDetail(true)
       
-      // Load definitive stock data
-      const [stockSummary, stockTruth] = await Promise.all([
-        getMedicineStockSummary(medicine.id),
-        getStockTruth(medicine.id),
-        loadPurchaseHistory(medicine.id)
-      ])
+      // Load comprehensive medicine data using MCP
+      const comprehensiveData = await getComprehensiveMedicineData(medicine.id)
       
-      setMedicineStockSummary(stockSummary)
-      setBatchStockTruth(stockTruth)
+      if (comprehensiveData) {
+        setComprehensiveMedicineData(comprehensiveData)
+        // Trigger robust per-batch stats load for monthly sold/purchased metrics
+        try {
+          const batchesToLoad = (comprehensiveData.batches || []).map(b => b.batch_number)
+          await Promise.all(batchesToLoad.map(async (bn) => {
+            await loadBatchStats(bn)
+            await loadBatchReceivedTotal(bn)
+            await loadBatchSoldTotal(bn)
+          }))
+        } catch (e) {
+          console.error('Failed to load robust batch stats for medicine detail:', e)
+        }
+        
+        // Convert to legacy format for backward compatibility
+        const convertedSummary: MedicineStockSummary = {
+          medication_id: comprehensiveData.medication_info.id,
+          medication_code: comprehensiveData.medication_info.medication_code,
+          medication_name: comprehensiveData.medication_info.name,
+          total_batches: comprehensiveData.stock_summary.total_batches,
+          total_quantity: comprehensiveData.stock_summary.total_stock,
+          total_cost_value: comprehensiveData.stock_summary.total_cost_value,
+          total_retail_value: comprehensiveData.stock_summary.total_retail_value,
+          critical_low_batches: comprehensiveData.stock_summary.low_stock_batches,
+          expired_batches: comprehensiveData.stock_summary.expired_stock,
+          expiring_soon_batches: comprehensiveData.stock_summary.expiring_soon_stock,
+          needs_reconciliation: false,
+          overall_alert_level: comprehensiveData.stock_summary.expired_stock > 0 ? 'CRITICAL' : 
+                              comprehensiveData.stock_summary.low_stock_batches > 0 ? 'WARNING' : 'NORMAL'
+        }
+        setMedicineStockSummary(convertedSummary)
+        
+        // Set empty stock truth data since we have comprehensive data
+        setBatchStockTruth([])
+      } else {
+        // Fallback to original functions
+        const [robustSummary, stockTruth] = await Promise.all([
+          getMedicationStockRobust(medicine.id),
+          getStockTruth(medicine.id),
+          loadPurchaseHistory(medicine.id)
+        ])
+        
+        if (robustSummary) {
+          const convertedSummary = {
+            medication_id: robustSummary.medication_id,
+            medication_code: '',
+            medication_name: medicine.name,
+            total_batches: Math.max(0, robustSummary.total_batches || 0),
+            total_quantity: Math.max(0, robustSummary.current_stock || 0),
+            total_cost_value: 0,
+            total_retail_value: 0,
+            critical_low_batches: 0,
+            expired_batches: Math.max(0, robustSummary.expired_units || 0),
+            expiring_soon_batches: 0,
+            needs_reconciliation: false,
+            overall_alert_level: 'NORMAL' as const
+          }
+          setMedicineStockSummary(convertedSummary)
+        }
+        setBatchStockTruth(stockTruth)
+      }
     } catch (error) {
       console.error('Error loading medicine detail:', error)
     } finally {
@@ -604,10 +720,24 @@ export default function InventoryPage() {
       setHistoryBatchNumber(batchNumber)
       const history = await getBatchPurchaseHistory(batchNumber)
       setHistoryEntries(history)
+      // Also fetch sales history for this batch
+      try {
+        const { data: sales, error: salesErr } = await supabase
+          .from('stock_transactions')
+          .select('id, created_at, batch_number, quantity, unit_price, total_amount, reference_id')
+          .eq('batch_number', batchNumber)
+          .eq('transaction_type', 'sale')
+          .order('created_at', { ascending: false })
+        if (!salesErr) setSalesHistoryEntries(sales || [])
+        else setSalesHistoryEntries([])
+      } catch {
+        setSalesHistoryEntries([])
+      }
       setShowHistoryModal(true)
     } catch (error) {
       console.error('Error loading batch history:', error)
       setHistoryEntries([])
+      setSalesHistoryEntries([])
     } finally {
       setHistoryLoading(false)
     }
@@ -628,6 +758,24 @@ export default function InventoryPage() {
     return historyEntries.filter(entry => {
       const entryDate = new Date(entry.purchased_at)
       return entryDate >= cutoffDate
+    })
+  }
+
+  const getFilteredSalesEntries = () => {
+    if (historyFilter === 'all') return salesHistoryEntries
+
+    const now = new Date()
+    let cutoffDate: Date
+
+    if (historyFilter === 'this_month') {
+      cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    } else {
+      cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    }
+
+    return (salesHistoryEntries || []).filter((e: any) => {
+      const d = new Date(e.created_at)
+      return d >= cutoffDate
     })
   }
 
@@ -1027,9 +1175,9 @@ export default function InventoryPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header (hidden in embedded mode) */}
       {!embedded && (
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Medicine Inventory</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Pharmacy Inventory Management</h1>
             <p className="text-gray-600 mt-1">Manage medicines with batch-wise tracking</p>
           </div>
           <button
@@ -1362,10 +1510,26 @@ export default function InventoryPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Batch Purchase History - {historyBatchNumber}</h2>
-              <button onClick={() => { setShowHistoryModal(false); setHistoryEntries([]); setHistoryBatchNumber(''); }} className="btn-secondary">Close</button>
+              <h2 className="text-xl font-bold">Batch History - {historyBatchNumber}</h2>
+              <button onClick={() => { setShowHistoryModal(false); setHistoryEntries([]); setSalesHistoryEntries([]); setHistoryBatchNumber(''); }} className="btn-secondary">Close</button>
             </div>
-            
+
+            {/* Tabs */}
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                onClick={() => setHistoryTab('purchases')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${historyTab === 'purchases' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                Purchases
+              </button>
+              <button
+                onClick={() => setHistoryTab('sales')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${historyTab === 'sales' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                Sales
+              </button>
+            </div>
+
             {/* Time Filters */}
             <div className="flex gap-2 mb-4">
               <button
@@ -1402,52 +1566,107 @@ export default function InventoryPage() {
 
             {historyLoading ? (
               <div className="text-center py-8">Loading history...</div>
-            ) : getFilteredHistoryEntries().length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg mb-2">No purchases found</p>
-                <p className="text-sm">No purchase history for this batch in the selected time period.</p>
-              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm table-auto">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-2">Date</th>
-                      <th className="text-left py-3 px-2">Bill #</th>
-                      <th className="text-left py-3 px-2">Patient</th>
-                      <th className="text-left py-3 px-2">Medicine</th>
-                      <th className="text-left py-3 px-2">Qty</th>
-                      <th className="text-left py-3 px-2">Amount</th>
-                      <th className="text-left py-3 px-2">Payment</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getFilteredHistoryEntries().map((entry) => (
-                      <tr key={`${entry.bill_id}-${entry.medication_id}`} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-2">{safeFormatDateTime(entry.purchased_at)}</td>
-                        <td className="py-3 px-2">{safeText(entry.bill_number)}</td>
-                        <td className="py-3 px-2">
-                          <div className="leading-tight">
-                            <div className="text-gray-900">{safeText(entry.patient_name)}</div>
-                            {entry.patient_uhid && (
-                              <div className="text-xs text-gray-500">UHID: {safeText(entry.patient_uhid)}</div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-2">{safeText(entry.medication_name)}</td>
-                        <td className="py-3 px-2">{entry.quantity}</td>
-                        <td className="py-3 px-2">₹{entry.total_amount}</td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${entry.payment_status === 'paid' ? 'bg-green-100 text-green-800' : entry.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {entry.payment_status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                {/* Totals */}
+                <div className="flex items-center gap-4 mb-3 text-sm">
+                  {historyTab === 'purchases' ? (
+                    <>
+                      <div className="px-3 py-2 bg-gray-100 rounded-lg">Total Purchased Qty: <span className="font-semibold">{getFilteredHistoryEntries().reduce((s, e) => s + (e.quantity || 0), 0)}</span></div>
+                      <div className="px-3 py-2 bg-gray-100 rounded-lg">Total Amount: <span className="font-semibold">₹{getFilteredHistoryEntries().reduce((s, e) => s + (e.total_amount || 0), 0)}</span></div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="px-3 py-2 bg-gray-100 rounded-lg">Total Sold Qty: <span className="font-semibold">{getFilteredSalesEntries().reduce((s, e) => s + Math.abs(e.quantity || 0), 0)}</span></div>
+                      <div className="px-3 py-2 bg-gray-100 rounded-lg">Total Sales: <span className="font-semibold">₹{getFilteredSalesEntries().reduce((s, e) => s + (e.total_amount || 0), 0)}</span></div>
+                    </>
+                  )}
+                </div>
+
+                {/* Tables */}
+                {historyTab === 'purchases' ? (
+                  getFilteredHistoryEntries().length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg mb-2">No purchases found</p>
+                      <p className="text-sm">No purchase history for this batch in the selected time period.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm table-auto">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2">Date</th>
+                            <th className="text-left py-3 px-2">Bill #</th>
+                            <th className="text-left py-3 px-2">Patient</th>
+                            <th className="text-left py-3 px-2">Medicine</th>
+                            <th className="text-left py-3 px-2">Qty</th>
+                            <th className="text-left py-3 px-2">Amount</th>
+                            <th className="text-left py-3 px-2">Payment</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getFilteredHistoryEntries().map((entry) => (
+                            <tr key={`${entry.bill_id}-${entry.medication_id}`} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-2">{safeFormatDateTime(entry.purchased_at)}</td>
+                              <td className="py-3 px-2">{safeText(entry.bill_number)}</td>
+                              <td className="py-3 px-2">
+                                <div className="leading-tight">
+                                  <div className="text-gray-900">{safeText(entry.patient_name)}</div>
+                                  {entry.patient_uhid && (
+                                    <div className="text-xs text-gray-500">UHID: {safeText(entry.patient_uhid)}</div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 px-2">{safeText(entry.medication_name)}</td>
+                              <td className="py-3 px-2">{entry.quantity}</td>
+                              <td className="py-3 px-2">₹{entry.total_amount}</td>
+                              <td className="py-3 px-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${entry.payment_status === 'paid' ? 'bg-green-100 text-green-800' : entry.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
+                                  {entry.payment_status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                ) : (
+                  getFilteredSalesEntries().length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg mb-2">No sales found</p>
+                      <p className="text-sm">No sales history for this batch in the selected time period.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm table-auto">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2">Date</th>
+                            <th className="text-left py-3 px-2">Bill #</th>
+                            <th className="text-left py-3 px-2">Qty</th>
+                            <th className="text-left py-3 px-2">Unit Price</th>
+                            <th className="text-left py-3 px-2">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getFilteredSalesEntries().map((row: any) => (
+                            <tr key={row.id} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-2">{safeFormatDateTime(row.created_at)}</td>
+                              <td className="py-3 px-2">{safeText(row.reference_id)}</td>
+                              <td className="py-3 px-2">{Math.abs(row.quantity || 0)}</td>
+                              <td className="py-3 px-2">₹{row.unit_price}</td>
+                              <td className="py-3 px-2">₹{row.total_amount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1513,12 +1732,12 @@ export default function InventoryPage() {
                       </div>
                       <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
                         <div className="text-slate-300 text-xs font-medium mb-2">Cost Value</div>
-                        <div className="text-2xl font-bold text-white">₹{medicineStockSummary.total_cost_value}</div>
+                        <div className="text-2xl font-bold text-white">₹{(medicineStockSummary.total_cost_value || 0).toLocaleString()}</div>
                         <div className="text-slate-300 text-xs mt-1">at purchase price</div>
                       </div>
                       <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
                         <div className="text-slate-300 text-xs font-medium mb-2">Retail Value</div>
-                        <div className="text-2xl font-bold text-white">₹{medicineStockSummary.total_retail_value}</div>
+                        <div className="text-2xl font-bold text-white">₹{(medicineStockSummary.total_retail_value || 0).toLocaleString()}</div>
                         <div className="text-slate-300 text-xs mt-1">at selling price</div>
                       </div>
                       <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
@@ -1567,7 +1786,7 @@ export default function InventoryPage() {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading medicine details...</p>
                 </div>
-              ) : selectedMedicineDetail.batches.length === 0 ? (
+              ) : (comprehensiveMedicineData?.batches || selectedMedicineDetail.batches || []).length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-lg mb-2">No batches available</p>
@@ -1587,12 +1806,13 @@ export default function InventoryPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {selectedMedicineDetail.batches.map((batch) => {
+                  {(comprehensiveMedicineData?.batches || selectedMedicineDetail.batches || []).map((batch: any) => {
                     const isExpired = new Date(batch.expiry_date) < new Date()
                     const expSoon = isExpiringSoon(batch.expiry_date)
                     const batchStats = batchStatsMap[batch.batch_number]
-                    const remaining = batchStats?.remainingUnits ?? batch.quantity
-                    const derivedStatus = getBatchStatus(batch, remaining, selectedMedicineDetail?.min_stock_level || 0)
+                    // Use comprehensive current_stock for truth; fallback to legacy quantity
+                    const remaining = (typeof batch.current_stock === 'number' ? batch.current_stock : batch.quantity) ?? 0
+                    const derivedStatus = getBatchStatus(batch as any, remaining, selectedMedicineDetail?.min_stock_level || 0)
                     
                     return (
                       <div key={batch.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -1601,7 +1821,7 @@ export default function InventoryPage() {
                           <div className="flex justify-between items-start">
                             <div>
                               <h4 className="text-lg font-semibold text-gray-900">{batch.batch_number}</h4>
-                              <p className="text-sm text-gray-500">Supplier: {batch.supplier}</p>
+                              <p className="text-sm text-gray-500">Supplier: {batch.supplier_name || batch.supplier}</p>
                             </div>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(derivedStatus)}`}>
                               {derivedStatus.replace('_', ' ')}
@@ -1615,13 +1835,30 @@ export default function InventoryPage() {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="bg-gray-50 rounded-lg p-3">
                               <div className="text-xs text-gray-500 uppercase tracking-wide">Current Stock</div>
-                              <div className="text-xl font-bold text-gray-900">{batchStats?.remainingUnits ?? batch.quantity}</div>
-                              <div className="text-xs text-gray-500">Purchased: {batchStats?.purchasedUnitsThisMonth ?? '—'}</div>
+                              <div className="text-xl font-bold text-gray-900">{remaining}</div>
+                              {(() => {
+                                const receivedFromLedger = receivedTotalsMap[batch.batch_number]
+                                const totalSoldLedger = soldTotalsMap[batch.batch_number] || 0
+                                const current = typeof batch.current_stock === 'number' ? batch.current_stock : (typeof batch.quantity === 'number' ? batch.quantity : 0)
+                                const derivedFromLedger = current + totalSoldLedger
+                                const receivedFallback = (typeof batch.received_quantity === 'number' ? batch.received_quantity :
+                                  typeof batch.original_quantity === 'number' ? batch.original_quantity : undefined)
+                                const receivedTotal = (typeof receivedFromLedger === 'number' && receivedFromLedger > 0)
+                                  ? receivedFromLedger
+                                  : (typeof receivedFallback === 'number' && receivedFallback > 0)
+                                    ? receivedFallback
+                                    : derivedFromLedger
+                                return (
+                                  <div className="text-xs text-gray-500">
+                                    Received: {Math.max(0, receivedTotal)}
+                                  </div>
+                                )
+                              })()}
                             </div>
                             <div className="bg-gray-50 rounded-lg p-3">
                               <div className="text-xs text-gray-500 uppercase tracking-wide">Selling Price</div>
                               <div className="text-xl font-bold text-green-600">₹{batch.selling_price}</div>
-                              <div className="text-xs text-gray-500">Cost: ₹{batch.unit_cost}</div>
+                              <div className="text-xs text-gray-500">Cost: ₹{batch.purchase_price || batch.unit_cost}</div>
                             </div>
                           </div>
 
@@ -1654,7 +1891,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="bg-green-50 rounded-lg p-2">
                               <div className="text-xs text-green-600 font-medium">Available</div>
-                              <div className="text-lg font-bold text-green-700">{batchStats?.remainingUnits ?? '—'}</div>
+                              <div className="text-lg font-bold text-green-700">{remaining}</div>
                             </div>
                           </div>
 
@@ -1671,7 +1908,7 @@ export default function InventoryPage() {
                               </button>
                             )}
                             <button
-                              onClick={() => handleEditBatch(batch)}
+                              onClick={() => handleEditBatch(batch as any)}
                               className={`${isExpired ? 'flex-1' : 'flex-1'} bg-green-600 text-white px-2 py-2 rounded-lg text-xs font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-1`}
                             >
                               <Edit className="w-3 h-3" />
@@ -1687,7 +1924,7 @@ export default function InventoryPage() {
                             {!isExpired && (
                               <>
                                 <button
-                                  onClick={() => printStandardLabel(batch, selectedMedicineDetail.name)}
+                                  onClick={() => printStandardLabel(batch as any, selectedMedicineDetail.name)}
                                   className="flex-1 bg-blue-600 text-white px-2 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
                                   title="Print Standard Label"
                                 >
@@ -1731,7 +1968,7 @@ export default function InventoryPage() {
                 
                 {loadingPurchases ? (
                   <div className="text-center py-8">Loading purchase history...</div>
-                ) : purchaseHistory.length === 0 ? (
+                ) : (comprehensiveMedicineData?.purchase_history || purchaseHistory).length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                     <p className="text-lg mb-2">No purchase history found</p>
@@ -1747,26 +1984,24 @@ export default function InventoryPage() {
                           <th className="text-left py-3 px-2">Quantity</th>
                           <th className="text-left py-3 px-2">Unit Price</th>
                           <th className="text-left py-3 px-2">Total</th>
-                          <th className="text-left py-3 px-2">Expiry</th>
+                          <th className="text-left py-3 px-2">Supplier</th>
                           <th className="text-left py-3 px-2">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {purchaseHistory.map((purchase) => (
+                        {(comprehensiveMedicineData?.purchase_history || purchaseHistory).map((purchase: any) => (
                           <tr key={purchase.id} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-2">
-                              {new Date(purchase.created_at).toLocaleDateString()}
+                              {new Date(purchase.created_at || purchase.purchase_date).toLocaleDateString()}
                             </td>
                             <td className="py-3 px-2">{purchase.batch_number || '—'}</td>
                             <td className="py-3 px-2">{purchase.quantity}</td>
                             <td className="py-3 px-2">₹{purchase.unit_price}</td>
                             <td className="py-3 px-2">₹{(purchase.quantity * purchase.unit_price).toFixed(2)}</td>
-                            <td className="py-3 px-2">
-                              {purchase.expiry_date ? new Date(purchase.expiry_date).toLocaleDateString() : '—'}
-                            </td>
+                            <td className="py-3 px-2">{purchase.supplier_name || '—'}</td>
                             <td className="py-3 px-2">
                               <button
-                                onClick={() => handleEditPurchase(purchase)}
+                                onClick={() => handleEditPurchase(purchase as any)}
                                 className="text-blue-600 hover:text-blue-800"
                                 title="Edit Purchase"
                               >
