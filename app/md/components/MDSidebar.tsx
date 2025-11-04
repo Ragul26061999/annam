@@ -98,9 +98,9 @@ const Sidebar: React.FC = () => {
             <Image
               src="/logo/annamHospital-bg.png"
               alt="Annam Hospital"
-              width={48}
-              height={48}
-              className="w-12 h-12 object-contain"
+              width={64}
+              height={64}
+              className="w-16 h-16 object-contain"
             />
           </div>
         </div>
