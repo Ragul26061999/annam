@@ -578,13 +578,14 @@ export default function NewBillingPage() {
 
       // Stock transactions and inventory adjustments are handled automatically by database triggers
 
-      // Show success modal with receipt
+      // Show success modal with receipt (snapshot payments for printing)
       setGeneratedBill({
         ...billData,
         items: billItems,
         totals: billTotals,
         customer: customer,
         paymentMethod: payments.length > 1 ? 'split' : payments[0].method,
+        payments: payments.map(p => ({ method: p.method, amount: Number(p.amount) || 0, reference: p.reference || '' })),
         hospitalDetails: hospitalDetails,
         billDate: getISTDate().toISOString()
       });
@@ -1385,7 +1386,14 @@ export default function NewBillingPage() {
                 <div className="space-y-1">
                   <p><strong>Bill No:</strong> {generatedBill.bill_number}</p>
                   <p><strong>Date:</strong> {formatISTDate(getISTDate())} {formatISTTime(getISTDate())}</p>
-                  <p><strong>Sales Type:</strong> {generatedBill.paymentMethod === 'credit' ? 'CREDIT' : 'CASH'}</p>
+                  <p>
+                    <strong>Sales Type:</strong>{' '}
+                    {Array.isArray(generatedBill.payments) && generatedBill.payments.length > 1
+                      ? generatedBill.payments.map((p: any) => (p.method || '').toUpperCase()).join(' + ')
+                      : (generatedBill.paymentMethod === 'credit'
+                          ? 'CREDIT'
+                          : (generatedBill.paymentMethod || 'cash').toUpperCase())}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p><strong>To:</strong> {generatedBill.customer.name}</p>
@@ -1421,20 +1429,24 @@ export default function NewBillingPage() {
                 </tbody>
               </table>
 
-              {/* Payment Details for Split Payments */}
-              {generatedBill.paymentMethod === 'split' && (
+              {/* Payment Details (supports split payments) */}
+              {Array.isArray(generatedBill.payments) && generatedBill.payments.length > 0 && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">Payment Details</h4>
                   <div className="space-y-1">
-                    {payments.map((payment, idx) => (
+                    {generatedBill.payments.map((payment: any, idx: number) => (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="capitalize">{payment.method}</span>
-                        <span className="font-medium">₹{payment.amount.toFixed(2)}</span>
+                        <span className="font-medium">₹{Number(payment.amount || 0).toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="border-t pt-1 mt-2 flex justify-between font-semibold">
                       <span>Total Paid</span>
-                      <span>₹{paymentsTotal.toFixed(2)}</span>
+                      <span>
+                        ₹{(
+                          (generatedBill.payments || []).reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0)
+                        ).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
