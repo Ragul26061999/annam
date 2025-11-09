@@ -498,26 +498,47 @@ export default function NewBillingPage() {
     try {
       setLoading(true);
       
-      // Create pharmacy bill
-      const { data: billData, error: billError } = await supabase
-        .from('billing')
-        .insert({
+      // Create pharmacy bill (handle prod schema differences: total_amount vs total)
+      let billData: any = null;
+      {
+        const base = {
           patient_id: customer.type === 'patient' ? customer.patient_id : 'c0c4724a-1e95-48fd-9db0-9e70eaa6a940', // Use existing patient ID for walk-ins
           currency: 'INR',
           subtotal: billTotals.subtotal,
           discount_type: billTotals.discountType,
           discount_value: billTotals.discountValue,
           tax_percent: billTotals.taxPercent,
-          total_amount: billTotals.totalAmount,
           payment_method: normalizeMethod(payments[0].method),
           customer_name: customer.name.trim(),
           customer_phone: customer.type === 'patient' ? (customer.phone ?? null) : (customer.phone ?? '').trim(),
           customer_type: customer.type
-        })
-        .select('*')
-        .single()
+        } as any;
 
-      if (billError) throw billError;
+        // Attempt 1: insert with total_amount
+        const { data: d1, error: e1 } = await supabase
+          .from('billing')
+          .insert({ ...base, total_amount: billTotals.totalAmount })
+          .select('*')
+          .single();
+
+        if (!e1) {
+          billData = d1;
+        } else {
+          const msg = (e1.message || '').toLowerCase();
+          // If total_amount column missing (schema cache or legacy), retry with total
+          if (msg.includes("'total_amount'") || msg.includes('total_amount') || msg.includes('column') && msg.includes('not') && msg.includes('found')) {
+            const { data: d2, error: e2 } = await supabase
+              .from('billing')
+              .insert({ ...base, total: billTotals.totalAmount })
+              .select('*')
+              .single();
+            if (e2) throw e2;
+            billData = d2;
+          } else {
+            throw e1;
+          }
+        }
+      }
 
       // Create bill items
       const billItemsData = billItems.map(item => ({
