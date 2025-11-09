@@ -508,7 +508,7 @@ export default function NewBillingPage() {
           discount_type: billTotals.discountType,
           discount_value: billTotals.discountValue,
           tax_percent: billTotals.taxPercent,
-          total: billTotals.totalAmount,
+          total_amount: billTotals.totalAmount,
           payment_method: normalizeMethod(payments[0].method),
           customer_name: customer.name.trim(),
           customer_phone: customer.type === 'patient' ? (customer.phone ?? null) : (customer.phone ?? '').trim(),
