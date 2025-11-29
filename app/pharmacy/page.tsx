@@ -313,6 +313,7 @@ export default function PharmacyPage() {
       setDetailsLoading(true)
       
       if (alertType === 'low') {
+        // Try simple query first
         const { data: medications, error: medError } = await supabase
           .from('medications')
           .select(`
@@ -325,53 +326,25 @@ export default function PharmacyPage() {
             unit_price,
             medicine_code
           `)
-          .gt('available_stock', 0)
-          .lte('available_stock', 'minimum_stock_level')
 
-        console.log('Low stock medications fetched:', medications?.length || 0, 'Error:', medError)
+        console.log('Low stock medications fetched (simple):', medications?.length || 0, 'Error:', medError)
 
         if (medError) {
           console.error('Error fetching low stock medications:', medError)
-          // Try fallback query
-          const { data: allMeds, error: fallbackError } = await supabase
-            .from('medications')
-            .select(`
-              id,
-              name,
-              category,
-              manufacturer,
-              available_stock,
-              minimum_stock_level,
-              unit_price,
-              medicine_code
-            `)
-          
-          if (fallbackError) {
-            console.error('Fallback query failed:', fallbackError)
-            setStockAlertDetails([])
-            setShowStockAlertsModal(true)
-            return
-          }
-          
-          // Filter manually
-          const filteredMeds = allMeds?.filter(med => 
-            med.available_stock > 0 && med.available_stock <= med.minimum_stock_level
-          ) || []
-          
-          const processedDetails = filteredMeds.map(med => ({
-            ...med,
-            alert_type: 'low_stock',
-            shortage_quantity: Math.max(0, med.minimum_stock_level - med.available_stock),
-            reorder_value: med.minimum_stock_level * 2 * (med.unit_price || 0)
-          })).sort((a, b) => (a.available_stock / a.minimum_stock_level) - (b.available_stock / b.minimum_stock_level))
-
-          setStockAlertDetails(processedDetails)
+          setStockAlertDetails([])
           setShowStockAlertsModal(true)
           return
         }
 
-        if (medications) {
-          const processedDetails = medications.map(med => ({
+        // Filter manually for low stock items
+        const lowStockMeds = medications?.filter(med => 
+          med.available_stock > 0 && med.available_stock <= med.minimum_stock_level
+        ) || []
+
+        console.log('Low stock medications after filtering:', lowStockMeds.length)
+
+        if (lowStockMeds.length > 0) {
+          const processedDetails = lowStockMeds.map(med => ({
             ...med,
             alert_type: 'low_stock',
             shortage_quantity: Math.max(0, med.minimum_stock_level - med.available_stock),
@@ -380,8 +353,12 @@ export default function PharmacyPage() {
 
           setStockAlertDetails(processedDetails)
           setShowStockAlertsModal(true)
+        } else {
+          setStockAlertDetails([])
+          setShowStockAlertsModal(true)
         }
       } else if (alertType === 'expired') {
+        // Try simple query first
         const { data: batches, error: batchError } = await supabase
           .from('medicine_batches')
           .select(`
@@ -390,53 +367,47 @@ export default function PharmacyPage() {
             expiry_date,
             current_quantity,
             selling_price,
-            medications!inner (
-              id,
-              name,
-              category,
-              manufacturer
-            )
+            medicine_id
           `)
-          .gt('current_quantity', 0)
-          .lt('expiry_date', new Date().toISOString())
 
-        console.log('Expired batches fetched:', batches?.length || 0, 'Error:', batchError)
+        console.log('Expired batches fetched (simple):', batches?.length || 0, 'Error:', batchError)
 
         if (batchError) {
           console.error('Error fetching expired batches:', batchError)
-          // Try fallback query
-          const { data: allBatches, error: fallbackError } = await supabase
-            .from('medicine_batches')
-            .select(`
-              id,
-              batch_number,
-              expiry_date,
-              current_quantity,
-              selling_price,
-              medications!inner (
-                id,
-                name,
-                category,
-                manufacturer
-              )
-            `)
+          setStockAlertDetails([])
+          setShowStockAlertsModal(true)
+          return
+        }
+
+        // Filter manually for expired batches with stock
+        const now = new Date()
+        const expiredBatches = batches?.filter(batch => 
+          batch.current_quantity > 0 && new Date(batch.expiry_date) < now
+        ) || []
+
+        console.log('Expired batches after filtering:', expiredBatches.length)
+
+        if (expiredBatches.length > 0) {
+          // Fetch medication info separately
+          const medicineIds = [...new Set(expiredBatches.map(b => b.medicine_id).filter(id => id))]
+          let medicines: any[] = []
           
-          if (fallbackError) {
-            console.error('Fallback query failed:', fallbackError)
-            setStockAlertDetails([])
-            setShowStockAlertsModal(true)
-            return
+          if (medicineIds.length > 0) {
+            const { data: medData } = await supabase
+              .from('medications')
+              .select('id, name, category, manufacturer')
+              .in('id', medicineIds)
+            medicines = medData || []
           }
-          
-          // Filter manually
-          const now = new Date()
-          const filteredBatches = allBatches?.filter(batch => 
-            batch.current_quantity > 0 && new Date(batch.expiry_date) < now
-          ) || []
-          
-          const processedDetails = filteredBatches.map(batch => ({
+
+          const processedDetails = expiredBatches.map(batch => ({
             ...batch,
-            medications: batch.medications,
+            medications: medicines.find(med => med.id === batch.medicine_id) || {
+              id: batch.medicine_id,
+              name: 'Unknown Medicine',
+              category: 'Unknown',
+              manufacturer: 'Unknown'
+            },
             alert_type: 'expired',
             total_value: batch.current_quantity * (batch.selling_price || 0),
             days_expired: Math.ceil((now.getTime() - new Date(batch.expiry_date).getTime()) / (1000 * 60 * 60 * 24))
@@ -444,24 +415,80 @@ export default function PharmacyPage() {
 
           setStockAlertDetails(processedDetails)
           setShowStockAlertsModal(true)
+        } else {
+          setStockAlertDetails([])
+          setShowStockAlertsModal(true)
+        }
+      } else if (alertType === 'expiring') {
+        // Try simple query for expiring soon (next 30 days)
+        const { data: batches, error: batchError } = await supabase
+          .from('medicine_batches')
+          .select(`
+            id,
+            batch_number,
+            expiry_date,
+            current_quantity,
+            selling_price,
+            medicine_id
+          `)
+
+        console.log('Expiring batches fetched (simple):', batches?.length || 0, 'Error:', batchError)
+
+        if (batchError) {
+          console.error('Error fetching expiring batches:', batchError)
+          setStockAlertDetails([])
+          setShowStockAlertsModal(true)
           return
         }
 
-        if (batches) {
-          const processedDetails = batches.map(batch => ({
+        // Filter manually for expiring batches (next 30 days)
+        const now = new Date()
+        const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000))
+        const expiringBatches = batches?.filter(batch => 
+          batch.current_quantity > 0 && 
+          new Date(batch.expiry_date) >= now && 
+          new Date(batch.expiry_date) <= thirtyDaysFromNow
+        ) || []
+
+        console.log('Expiring batches after filtering:', expiringBatches.length)
+
+        if (expiringBatches.length > 0) {
+          // Fetch medication info separately
+          const medicineIds = [...new Set(expiringBatches.map(b => b.medicine_id).filter(id => id))]
+          let medicines: any[] = []
+          
+          if (medicineIds.length > 0) {
+            const { data: medData } = await supabase
+              .from('medications')
+              .select('id, name, category, manufacturer')
+              .in('id', medicineIds)
+            medicines = medData || []
+          }
+
+          const processedDetails = expiringBatches.map(batch => ({
             ...batch,
-            medications: batch.medications,
-            alert_type: 'expired',
+            medications: medicines.find(med => med.id === batch.medicine_id) || {
+              id: batch.medicine_id,
+              name: 'Unknown Medicine',
+              category: 'Unknown',
+              manufacturer: 'Unknown'
+            },
+            alert_type: 'expiring_soon',
             total_value: batch.current_quantity * (batch.selling_price || 0),
-            days_expired: Math.ceil((new Date().getTime() - new Date(batch.expiry_date).getTime()) / (1000 * 60 * 60 * 24))
-          })).sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime())
+            days_to_expiry: Math.ceil((new Date(batch.expiry_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          })).sort((a, b) => a.days_to_expiry - b.days_to_expiry)
 
           setStockAlertDetails(processedDetails)
+          setShowStockAlertsModal(true)
+        } else {
+          setStockAlertDetails([])
           setShowStockAlertsModal(true)
         }
       }
     } catch (error) {
       console.error('Error loading stock alert details:', error)
+      setStockAlertDetails([])
+      setShowStockAlertsModal(true)
     } finally {
       setDetailsLoading(false)
     }
