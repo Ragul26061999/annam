@@ -27,6 +27,7 @@ interface Medicine {
   category: string;
   unit: string;
   description?: string;
+  combination?: string;
   batches: MedicineBatch[];
 }
 
@@ -235,7 +236,7 @@ export default function NewBillingPage() {
       setLoading(true);
       const { data: medicinesData, error: medicinesError } = await supabase
          .from('medications')
-         .select('id, name, medication_code, manufacturer, category, dosage_form')
+         .select('id, name, medication_code, manufacturer, category, dosage_form, combination')
          .eq('status', 'active')
          .order('name');
 
@@ -268,6 +269,7 @@ export default function NewBillingPage() {
         category: m.category,
         unit: m.dosage_form || 'units',
         description: '',
+        combination: m.combination,
         batches: batchesByMedicine[m.id] || []
       })).filter((medicine: Medicine) => medicine.batches.length > 0);
 
@@ -348,12 +350,14 @@ export default function NewBillingPage() {
     : medicines.filter((medicine) => {
         const term = searchTermTrimmed.toLowerCase();
         const name = (medicine.name || '').toLowerCase();
+        const combination = (medicine.combination || '').toLowerCase();
         const code = (medicine.medicine_code || '').toLowerCase();
         const manufacturer = (medicine.manufacturer || '').toLowerCase();
         const category = (medicine.category || '').toLowerCase();
         const unit = (medicine.unit || '').toLowerCase();
         const baseMatch =
           name.includes(term) ||
+          combination.includes(term) ||
           code.includes(term) ||
           manufacturer.includes(term) ||
           category.includes(term) ||
@@ -448,24 +452,30 @@ export default function NewBillingPage() {
 
   // Calculate totals with discount and tax
   const calculateTotals = () => {
-    const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
+    const subtotal = Math.round(billItems.reduce((sum, item) => sum + item.total, 0));
     
     let discountAmount = 0;
     if (billTotals.discountType === 'percent') {
-      discountAmount = (subtotal * billTotals.discountValue) / 100;
+      discountAmount = Math.round((subtotal * billTotals.discountValue) / 100);
     } else {
-      discountAmount = billTotals.discountValue;
+      discountAmount = Math.round(billTotals.discountValue);
     }
     
     const afterDiscount = subtotal - discountAmount;
-    const taxAmount = (afterDiscount * billTotals.taxPercent) / 100;
+    const taxAmount = Math.round((afterDiscount * billTotals.taxPercent) / 100);
     const totalAmount = afterDiscount + taxAmount;
     
+    // Custom rounding: .5 and below stays same, .51 and above goes to next
+    const customRound = (num: number) => {
+      const decimal = num - Math.floor(num);
+      return decimal <= 0.5 ? Math.floor(num) : Math.ceil(num);
+    };
+    
     return {
-      subtotal,
-      discountAmount,
-      taxAmount,
-      totalAmount
+      subtotal: customRound(subtotal),
+      discountAmount: customRound(discountAmount),
+      taxAmount: customRound(taxAmount),
+      totalAmount: customRound(totalAmount)
     };
   };
 
@@ -671,7 +681,7 @@ export default function NewBillingPage() {
                   <span className="font-semibold text-slate-900">{billItems.length}</span>
                   <span className="h-6 w-px bg-slate-200" />
                   <span className="text-slate-500">Total:</span>
-                  <span className="text-lg font-semibold text-emerald-600">₹{billTotals.totalAmount.toFixed(2)}</span>
+                  <span className="text-lg font-semibold text-emerald-600">₹{Math.round(billTotals.totalAmount)}</span>
                 </div>
               </div>
             </div>
@@ -704,28 +714,15 @@ export default function NewBillingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
+        <div className="grid grid-cols-2 gap-6 mt-2">
           {/* Left side: Sales Entry + Medicine */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             {/* Sales Entry Information (Customer + Bill Info) */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-blue-600" />
                   <h2 className="text-sm font-semibold tracking-wide text-slate-900 uppercase">Sales Entry Information</h2>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-slate-600">
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium text-slate-500">New Bill No</span>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {generatedBill?.bill_number || 'AP' + new Date().getFullYear().toString().slice(-2) + '00000'}
-                    </span>
-                  </div>
-                  <div className="h-8 w-px bg-slate-200" />
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium text-slate-500">Date</span>
-                    <span className="text-sm font-semibold text-slate-900">{new Date().toLocaleDateString('en-IN')}</span>
-                  </div>
                 </div>
               </div>
 
@@ -973,7 +970,7 @@ export default function NewBillingPage() {
                         <span>{index + 1}</span>
                         <div className="flex flex-col">
                           <span className="font-medium truncate">{item.medicine.name}</span>
-                          <span className="text-[10px] text-slate-500 truncate">Batch: {item.batch.batch_number}</span>
+                          <span className="text-[10px] text-slate-500 truncate">Batch: {item.batch.batch_number.slice(-4)}</span>
                         </div>
                         <span className="text-right font-medium">₹{item.batch.selling_price.toFixed(2)}</span>
                         <div className="flex items-center justify-center">
@@ -1082,23 +1079,23 @@ export default function NewBillingPage() {
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs flex flex-col gap-2">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Subtotal</span>
-                      <span className="font-medium text-slate-900">₹{billTotals.subtotal.toFixed(2)}</span>
+                      <span className="font-medium text-slate-900">₹{Math.round(billTotals.subtotal)}</span>
                     </div>
                     {billTotals.discountAmount > 0 && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Discount</span>
-                        <span className="font-medium text-red-600">-₹{billTotals.discountAmount.toFixed(2)}</span>
+                        <span className="font-medium text-red-600">-₹{Math.round(billTotals.discountAmount)}</span>
                       </div>
                     )}
                     {billTotals.taxAmount > 0 && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Tax ({billTotals.taxPercent}%)</span>
-                        <span className="font-medium text-slate-900">₹{billTotals.taxAmount.toFixed(2)}</span>
+                        <span className="font-medium text-slate-900">₹{Math.round(billTotals.taxAmount)}</span>
                       </div>
                     )}
                     <div className="mt-2 flex items-center justify-between border-top border-emerald-200 pt-1">
                       <span className="text-[13px] font-semibold text-slate-900">Total Amount</span>
-                      <span className="text-lg font-bold text-emerald-700">₹{billTotals.totalAmount.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-emerald-700">₹{Math.round(billTotals.totalAmount)}</span>
                     </div>
                   </div>
 
@@ -1158,23 +1155,23 @@ export default function NewBillingPage() {
                 <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 mb-6 border border-gray-200">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-lg font-semibold text-gray-900">Bill Summary</h4>
-                    <span className="text-2xl font-bold text-green-600">₹{totalDue.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-green-600">₹{Math.round(totalDue)}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div className="text-center p-3 bg-white rounded-lg border">
                       <div className="font-medium text-gray-900">Subtotal</div>
-                      <div className="text-gray-600">₹{billTotals.subtotal.toFixed(2)}</div>
+                      <div className="text-gray-600">₹{Math.round(billTotals.subtotal)}</div>
                     </div>
                     {billTotals.discountAmount > 0 && (
                       <div className="text-center p-3 bg-white rounded-lg border">
                         <div className="font-medium text-gray-900">Discount</div>
-                        <div className="text-red-600">-₹{billTotals.discountAmount.toFixed(2)}</div>
+                        <div className="text-red-600">-₹{Math.round(billTotals.discountAmount)}</div>
                       </div>
                     )}
                     {billTotals.taxAmount > 0 && (
                       <div className="text-center p-3 bg-white rounded-lg border">
                         <div className="font-medium text-gray-900">Tax</div>
-                        <div className="text-blue-600">₹{billTotals.taxAmount.toFixed(2)}</div>
+                        <div className="text-blue-600">₹{Math.round(billTotals.taxAmount)}</div>
                       </div>
                     )}
                   </div>
@@ -1328,16 +1325,16 @@ export default function NewBillingPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Total Amount</span>
-                      <span className="text-lg font-semibold text-gray-900">₹{totalDue.toFixed(2)}</span>
+                      <span className="text-lg font-semibold text-gray-900">₹{Math.round(totalDue)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Paid Amount</span>
-                      <span className="text-lg font-semibold text-green-600">₹{paid.toFixed(2)}</span>
+                      <span className="text-lg font-semibold text-green-600">₹{Math.round(paid)}</span>
                     </div>
                     <div className="border-t border-gray-300 pt-3 flex justify-between items-center">
                       <span className="text-gray-900 font-medium">Remaining Balance</span>
                       <span className={`text-lg font-bold ${remainingAmount === 0 ? 'text-green-600' : remainingAmount < 0 ? 'text-red-600' : 'text-orange-600'}`}>
-                        ₹{remainingAmount.toFixed(2)}
+                        ₹{Math.round(remainingAmount)}
                       </span>
                     </div>
                   </div>
@@ -1363,7 +1360,7 @@ export default function NewBillingPage() {
                     <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
                     <div>
                       <p className="text-red-800 font-medium">Payment amount exceeds bill total</p>
-                      <p className="text-red-700 text-sm">Please adjust the payment amounts to not exceed ₹{totalDue.toFixed(2)}</p>
+                      <p className="text-red-700 text-sm">Please adjust the payment amounts to not exceed ₹{Math.round(totalDue)}</p>
                     </div>
                   </div>
                 )}
@@ -1507,19 +1504,40 @@ export default function NewBillingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {generatedBill.items.map((item: any, index: number) => (
-                    <tr key={index} className="border-b border-gray-200">
-                      <td className="py-2">{index + 1}</td>
-                      <td className="py-2">
-                        <div>
-                          <p className="font-medium">{item.medicine.name}</p>
-                          <p className="text-xs text-gray-500">Batch: {item.batch.batch_number}</p>
-                        </div>
-                      </td>
-                      <td className="text-center py-2">{item.quantity}</td>
-                      <td className="py-2 amount-cell">₹{item.total.toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    // Group items by medicine name and combine quantities/totals
+                    const groupedItems = generatedBill.items.reduce((acc: any, item: any) => {
+                      const medicineName = item.medicine.name;
+                      if (!acc[medicineName]) {
+                        acc[medicineName] = {
+                          medicine: item.medicine,
+                          totalQuantity: 0,
+                          totalAmount: 0,
+                          batches: []
+                        };
+                      }
+                      acc[medicineName].totalQuantity += item.quantity;
+                      acc[medicineName].totalAmount += item.total;
+                      acc[medicineName].batches.push(item.batch.batch_number.slice(-4));
+                      return acc;
+                    }, {});
+
+                    return Object.values(groupedItems).map((groupedItem: any, index: number) => (
+                      <tr key={index} className="border-b border-gray-200">
+                        <td className="py-2">{index + 1}</td>
+                        <td className="py-2">
+                          <div>
+                            <p className="font-medium truncate">{groupedItem.medicine.name}</p>
+                            <p className="text-xs text-gray-500 truncate">
+                              Batches: {groupedItem.batches.join(', ')}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="text-center py-2">{groupedItem.totalQuantity}</td>
+                        <td className="py-2 amount-cell">₹{Math.round(groupedItem.totalAmount)}</td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
 

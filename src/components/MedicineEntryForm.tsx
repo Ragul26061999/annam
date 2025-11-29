@@ -32,6 +32,7 @@ interface MedicineFormData {
   category: string;
   dosage_form: string;
   strength: string;
+  combination: string;
   unit_price: number;
   minimum_stock_level: number;
   maximum_stock_level: number;
@@ -113,6 +114,7 @@ const MedicineEntryForm: React.FC<MedicineEntryFormProps> = ({
     category: 'Antibiotic',
     dosage_form: 'Tablet',
     strength: '',
+    combination: '',
     unit_price: 0,
     minimum_stock_level: 10,
     maximum_stock_level: 1000,
@@ -655,6 +657,12 @@ const MedicineEntryForm: React.FC<MedicineEntryFormProps> = ({
                         value={medicineForm.strength}
                         onChange={(e) => setMedicineForm({ ...medicineForm, strength: e.target.value })}
                         placeholder="e.g., 500mg"
+                      />
+                      <FormInput
+                        label="Combination"
+                        value={medicineForm.combination}
+                        onChange={(e) => setMedicineForm({ ...medicineForm, combination: e.target.value })}
+                        placeholder="e.g., Paracetamol + Ibuprofen"
                       />
                     </div>
                   </FormSection>

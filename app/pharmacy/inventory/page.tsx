@@ -34,6 +34,7 @@ interface Medicine {
   min_stock_level: number
   batches: MedicineBatch[]
   medication_code?: string
+  combination?: string
   strength?: string
   dosage_form?: string
   generic_name?: string
@@ -441,7 +442,7 @@ export default function InventoryPage() {
       // Fetch active medications
       const { data: meds, error: medsError } = await supabase
         .from('medications')
-        .select('id, name, category, manufacturer, available_stock, minimum_stock_level, dosage_form')
+        .select('id, name, category, manufacturer, available_stock, minimum_stock_level, dosage_form, combination')
         .eq('status', 'active')
         .order('name')
 
@@ -496,7 +497,9 @@ export default function InventoryPage() {
           unit: m.dosage_form || 'units',
           total_stock: calculatedTotalStock,
           min_stock_level: Number(m.minimum_stock_level ?? 0),
-          batches: batchesMapped
+          batches: batchesMapped,
+          medication_code: m.medication_code,
+          combination: m.combination
         }
       })
 
@@ -567,6 +570,7 @@ export default function InventoryPage() {
 
   const filteredMedicines = medicines.filter(medicine => {
     const matchesSearch = (medicine.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (medicine.combination || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (medicine.manufacturer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (medicine.unit || '').toLowerCase().includes(searchTerm.toLowerCase())
     
