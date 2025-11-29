@@ -1438,23 +1438,37 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header (hidden in embedded mode) */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Modern Header */}
       {!embedded && (
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Pharmacy Inventory Management</h1>
-            <p className="text-gray-600 mt-1">Manage medicines with batch-wise tracking</p>
+        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50">
+          <div className="container mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+                  <Package className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    Pharmacy Inventory Management
+                  </h1>
+                  <p className="text-gray-600 mt-1">Manage medicines with batch-wise tracking and real-time stock monitoring</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddMedicine(true)}
+                className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                Add Medicine
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10"></div>
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowAddMedicine(true)}
-            className="btn-primary flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Medicine
-          </button>
         </div>
       )}
+
+      <div className="container mx-auto px-6 py-8 space-y-8">
 
   {/* Edit Batch Modal - Modern Stunning UI */}
   {showEditBatch && editingBatch && (
@@ -1884,61 +1898,135 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      {/* Enhanced Search and Filter Section */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search medicines..."
+              placeholder="Search medicines by name, manufacturer, or dosage type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input pl-10"
+              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
             />
           </div>
           
-          <select
-            value={dosageFilter}
-            onChange={(e) => setDosageFilter(e.target.value)}
-            className="input"
-          >
-            <option value="">All Dosage Types</option>
-            {dosageTypes.map((dt) => (
-              <option key={dt} value={dt}>{dt}</option>
-            ))}
-          </select>
+          {/* Filter Dropdowns */}
+          <div className="flex gap-3">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <select
+                value={dosageFilter}
+                onChange={(e) => setDosageFilter(e.target.value)}
+                className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
+              >
+                <option value="">All Dosage Types</option>
+                {dosageTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="relative">
+              <AlertTriangle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="low_stock">Low Stock</option>
+                <option value="out_of_stock">Out of Stock</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+          </div>
           
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="low_stock">Low Stock</option>
-            <option value="out_of_stock">Out of Stock</option>
-            <option value="expired">Expired</option>
-          </select>
-          
-          <div className="flex items-center text-sm text-gray-600">
-            <Filter className="w-4 h-4 mr-1" />
-            {filteredMedicines.length} medicines
+          {/* Results Counter */}
+          <div className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">
+                {filteredMedicines.length} medicines
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Dashboard KPIs (Patients page style using StatCard) */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      {/* Enhanced Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {(() => {
           const stats = dashboardStats()
           return (
             <>
-              <StatCard title="Total Medicines" value={String(stats.totalMedicines)} icon={<Package className="w-5 h-5 text-gray-600" />} />
-              <StatCard title="Total Batches" value={String(stats.totalBatches)} icon={<Layers className="w-5 h-5 text-gray-600" />} />
-              <StatCard title="Low Stock" value={String(stats.lowStock)} icon={<AlertTriangle className="w-5 h-5 text-yellow-600" />} />
-              <StatCard title="Expiring Soon" value={String(stats.expiringSoon)} icon={<Clock className="w-5 h-5 text-orange-600" />} />
-              <StatCard title="Expired" value={String(stats.expired)} icon={<AlertTriangle className="w-5 h-5 text-red-600" />} />
+              <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Package className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded-full">Total</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold text-gray-900">{stats.totalMedicines}</div>
+                  <div className="text-sm text-gray-600">Medicines</div>
+                </div>
+              </div>
+
+              <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Layers className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-xs text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded-full">Batches</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold text-gray-900">{stats.totalBatches}</div>
+                  <div className="text-sm text-gray-600">Total Batches</div>
+                </div>
+              </div>
+
+              <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <AlertTriangle className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-xs text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded-full">Warning</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold text-gray-900">{stats.lowStock}</div>
+                  <div className="text-sm text-gray-600">Low Stock</div>
+                </div>
+              </div>
+
+              <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-xs text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded-full">Alert</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold text-gray-900">{stats.expiringSoon}</div>
+                  <div className="text-sm text-gray-600">Expiring Soon</div>
+                </div>
+              </div>
+
+              <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <AlertTriangle className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-1 rounded-full">Critical</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold text-gray-900">{stats.expired}</div>
+                  <div className="text-sm text-gray-600">Expired</div>
+                </div>
+              </div>
             </>
           )
         })()}
@@ -1946,30 +2034,33 @@ export default function InventoryPage() {
 
       {/* Overall Remaining Stock card removed per request */}
 
-      {/* Medicines Table */}
-      <div className="card">
+      {/* Enhanced Medicines Table */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
         {loading ? (
-          <div className="text-center py-12">
-            <Package className="w-8 h-8 mx-auto mb-2 text-gray-400 animate-pulse" />
-            <p>Loading medicines...</p>
+          <div className="text-center py-16">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <Package className="w-12 h-12 mx-auto mb-4 text-gray-400 animate-pulse" />
+            <p className="text-gray-600 font-medium">Loading medicines...</p>
+            <p className="text-gray-500 text-sm mt-1">Fetching inventory data</p>
           </div>
         ) : filteredMedicines.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <Package className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-            <p>No medicines found</p>
+          <div className="text-center py-16">
+            <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <p className="text-gray-600 font-medium text-lg">No medicines found</p>
+            <p className="text-gray-500 text-sm mt-1">Try adjusting your search or filters</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                 <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Medicine Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Dosage Type</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Manufacturer</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Stock</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Batches</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Status</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Actions</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900">Medicine Name</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900">Dosage Type</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900">Manufacturer</th>
+                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Stock</th>
+                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Batches</th>
+                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Status</th>
+                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1978,44 +2069,57 @@ export default function InventoryPage() {
                   return (
                     <tr 
                       key={medicine.id} 
-                      className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all duration-200 group"
                       onClick={() => openMedicineDetail(medicine)}
                     >
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-gray-900">{medicine.name}</span>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                            <Package className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{medicine.name}</span>
+                            {medicine.combination && (
+                              <div className="text-xs text-gray-500 mt-1">{medicine.combination}</div>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-gray-600">{medicine.unit}</td>
-                      <td className="py-4 px-4 text-gray-600">{medicine.manufacturer}</td>
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                          {medicine.unit}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-gray-700">{medicine.manufacturer}</td>
                       <td className="py-4 px-4 text-center">
-                        <div className="text-sm">
-                          <div className="font-semibold">{medicine.total_stock}</div>
-                          <div className="text-gray-500">Min: {medicine.min_stock_level}</div>
+                        <div className="inline-flex flex-col items-center">
+                          <div className={`text-lg font-bold ${medicine.total_stock <= medicine.min_stock_level ? 'text-red-600' : medicine.total_stock <= medicine.min_stock_level * 2 ? 'text-yellow-600' : 'text-green-600'}`}>
+                            {medicine.total_stock}
+                          </div>
+                          <div className="text-xs text-gray-500">Min: {medicine.min_stock_level}</div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                      <td className="py-4 px-6 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
                           {medicine.batches.length}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+                      <td className="py-4 px-6 text-center">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(status)}`}>
                           {status.replace('_', ' ').toUpperCase()}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
+                      <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleEditMedicine(medicine)
                             }}
-                            className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded flex items-center gap-1"
+                            className="group/edit p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
                             title="Edit Medicine"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4 group-hover/edit:scale-110 transition-transform" />
                             <span className="text-sm font-medium">Edit</span>
                           </button>
                           <button
@@ -2023,10 +2127,10 @@ export default function InventoryPage() {
                               e.stopPropagation()
                               handleDeleteMedicine(medicine)
                             }}
-                            className="px-2 py-1 text-red-600 hover:bg-red-50 rounded flex items-center gap-1"
+                            className="group/delete p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 flex items-center gap-2"
                             title="Delete Medicine"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 group-hover/delete:scale-110 transition-transform" />
                             <span className="text-sm font-medium">Delete</span>
                           </button>
                         </div>
@@ -2852,6 +2956,7 @@ export default function InventoryPage() {
         </div>
       )}
 
+      </div>
     </div>
   )
 }
