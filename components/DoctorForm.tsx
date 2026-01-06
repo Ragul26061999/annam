@@ -132,8 +132,9 @@ const DoctorForm: React.FC<DoctorFormProps> = ({
                       value={formData.licenseNumber}
                       onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm" 
-                      placeholder="LICDOC001"
+                      placeholder="Will be auto-generated if empty"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate unique ID</p>
                   </div>
                 </div>
                 <div className="mt-4">
@@ -156,11 +157,19 @@ const DoctorForm: React.FC<DoctorFormProps> = ({
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Specialization *</label>
                     <select 
                       value={formData.specialization}
-                      onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                      onChange={(e) => {
+                        const selectedSpec = e.target.value;
+                        setFormData({
+                          ...formData, 
+                          specialization: selectedSpec,
+                          department: selectedSpec // Auto-fill department with same value
+                        });
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
+                      required
                     >
                       <option value="">Select Specialization</option>
                       {specializations.map(spec => (
@@ -170,16 +179,15 @@ const DoctorForm: React.FC<DoctorFormProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                    <select 
+                    <input 
+                      type="text" 
                       value={formData.department}
                       onChange={(e) => setFormData({...formData, department: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm"
-                    >
-                      <option value="">Select Department</option>
-                      {departments.filter(dept => dept !== 'All').map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                      ))}
-                    </select>
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 backdrop-blur-sm" 
+                      placeholder="Auto-filled from specialization"
+                      readOnly
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Auto-filled based on specialization</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
